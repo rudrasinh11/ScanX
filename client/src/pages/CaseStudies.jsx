@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Download, Search, UploadCloud, FileText, Plus, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Reveal from "../components/Reveal.jsx"; // FIXED: Restored to single double-dot path mapping
-import { StaggerGrid, StaggerItem } from "../components/StaggerGrid.jsx"; // FIXED: Restored to single double-dot path mapping
-import api from "../lib/api.js"; // FIXED: Restored to single double-dot path mapping
+import Reveal from "../components/Reveal.jsx"; 
+import { StaggerGrid, StaggerItem } from "../components/StaggerGrid.jsx"; 
+import api from "../lib/api.js"; 
 
 const fallback = [
   { slug: "coastal-cafe-group", industry: "Hospitality", businessName: "Coastal Café Group", objective: "Improve repeat visit rate and local search visibility.", tags: ["Reviews", "Local SEO", "Customer Journey"] },
@@ -13,7 +13,7 @@ const fallback = [
 ];
 
 export default function CaseStudies() {
-  const [caseStudies, setCaseStudies] = useState(fallback);
+  const [caseStudies, setCaseStudies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [industry, setIndustry] = useState("All");
   const [query, setQuery] = useState("");
@@ -36,22 +36,30 @@ export default function CaseStudies() {
     api
       .get("/case-studies")
       .then((res) => {
-        setCaseStudies(res.data.length ? res.data : fallback);
+        // ✅ FIXED: Explicitly display dynamic live backend data stream if it contains entries
+        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+          setCaseStudies(res.data);
+        } else {
+          setCaseStudies(fallback);
+        }
         setOffline(false);
       })
-      .catch(() => setOffline(true))
+      .catch((err) => {
+        console.error("API call error:", err);
+        setOffline(true);
+        setCaseStudies(fallback);
+      })
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     fetchStudies();
-    // Automatically display dashboard creator panel tools if admin credentials exist in storage
     const token = localStorage.getItem("token") || document.cookie.includes("token");
     if (token) setIsAdmin(true);
   }, []);
 
   const industries = useMemo(
-    () => ["All", ...new Set(caseStudies.map((c) => c.industry))],
+    () => ["All", ...new Set(caseStudies.map((c) => c.industry || "General"))],
     [caseStudies]
   );
 
@@ -59,8 +67,8 @@ export default function CaseStudies() {
     const matchesIndustry = industry === "All" || c.industry === industry;
     const matchesQuery =
       !query ||
-      c.businessName.toLowerCase().includes(query.toLowerCase()) ||
-      c.objective.toLowerCase().includes(query.toLowerCase());
+      (c.businessName && c.businessName.toLowerCase().includes(query.toLowerCase())) ||
+      (c.objective && c.objective.toLowerCase().includes(query.toLowerCase()));
     return matchesIndustry && matchesQuery;
   });
 
@@ -114,12 +122,10 @@ export default function CaseStudies() {
     formData.append("pdf", pdfFile);
 
     try {
-      // Post to our authenticated admin gateway endpoint routing structure
       await api.post("/admin/case-studies", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
       
-      // Clear form states upon validation acceptance
       setNewStudy({ businessName: "", industry: "", objective: "", tags: "", summary: "" });
       setPdfFile(null);
       setShowForm(false);
@@ -193,7 +199,6 @@ export default function CaseStudies() {
                 </div>
 
                 <div className="flex flex-col justify-between space-y-4">
-                  {/* HTML5 Drag and drop dropzone container workspace */}
                   <div 
                     onDragEnter={handleDrag}
                     onDragOver={handleDrag}
@@ -288,19 +293,19 @@ export default function CaseStudies() {
                     }}
                   />
                   <span className="font-num text-3xl sm:text-4xl font-semibold text-ink opacity-15 relative">
-                    {c.businessName.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+                    {c.businessName ? c.businessName.split(" ").map((w) => w[0]).slice(0, 2).join("") : "CS"}
                   </span>
                 </div>
                 <div className="p-6 sm:p-7 flex flex-col flex-1">
                   <div className="text-[11px] uppercase tracking-wider text-gold font-semibold mb-2.5">
-                    {c.industry}
+                    {c.industry || "General"}
                   </div>
                   <h3 className="text-lg sm:text-xl font-heading font-bold mb-2.5">{c.businessName}</h3>
                   <p className="text-sm text-inksoft leading-relaxed mb-4.5 flex-1">{c.objective}</p>
                   <div className="flex flex-wrap gap-2 mb-5">
-                    {(c.tags || []).map((tag) => (
+                    {(Array.isArray(c.tags) ? c.tags : typeof c.tags === "string" ? c.tags.split(",") : []).map((tag) => (
                       <span key={tag} className="text-[11px] bg-raised px-2.5 py-1.5 rounded-full text-inksoft">
-                        {tag}
+                        {tag.trim()}
                       </span>
                     ))}
                   </div>
@@ -308,8 +313,14 @@ export default function CaseStudies() {
                     <Link to={`/case-studies/${c.slug}`} className="flex items-center gap-1.5 hover:text-gold transition-colors">
                       Preview <ArrowRight size={14} />
                     </Link>
+                    {/* ✅ FIXED: Prepends backend API endpoint addresses safely onto internal static asset targets */}
                     {c.pdfUrl && (
-                      <a href={c.pdfUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 hover:text-gold transition-colors">
+                      <a 
+                        href={c.pdfUrl.startsWith('http') ? c.pdfUrl : `${(import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/api\/?$/i, '')}${c.pdfUrl}`} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="flex items-center gap-1.5 hover:text-gold transition-colors"
+                      >
                         Download PDF <Download size={14} />
                       </a>
                     )}
