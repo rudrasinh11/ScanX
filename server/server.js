@@ -19,7 +19,7 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: [process.env.CLIENT_URL || "http://localhost:5173", "https://scanx-market.vercel.app"]
   })
 );
 app.use(express.json({ limit: "100kb" }));
@@ -49,7 +49,7 @@ const PORT = process.env.PORT || 5000;
 // set up http server + socket.io to track connected clients
 const server = http.createServer(app);
 const io = new IOServer(server, {
-  cors: { origin: process.env.CLIENT_URL || "http://localhost:5173" },
+  cors: { origin: [process.env.CLIENT_URL || "http://localhost:5173", "https://scanx-market.vercel.app"] },
 });
 
 // track connected clients with optional submission data
