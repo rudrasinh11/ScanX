@@ -9,7 +9,7 @@ import { connectDB } from "./config/db.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import caseStudyRoutes from "./routes/caseStudyRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import ContactSubmission from "./models/ContactSubmission.js"; // Statically imported here to fix runtime compilation crashes!
+import ContactSubmission from "./models/ContactSubmission.js";
 
 dotenv.config();
 
@@ -18,7 +18,6 @@ const app = express();
 // Serve uploaded files
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-// Updated Dynamic CORS Configuration
 const allowedOrigins = [
   process.env.CLIENT_URL || "http://localhost:5173", 
   "https://scanx-market.vercel.app"
@@ -57,19 +56,20 @@ const contactLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
   message: { message: "Too many requests. Please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
-app.use("/api/contact", contactLimiter);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", service: "scanx-api" });
 });
 
-// Root fallback handler so checking the base backend URL doesn't return a 404
 app.get("/", (req, res) => {
   res.send("ScanX API Server Active & Ready");
 });
 
-app.use("/api/contact", contactRoutes);
+// ✅ FIXED: Single clean registration path mapping combining limiter + logic smoothly
+app.use("/api/contact", contactLimiter, contactRoutes);
 app.use("/api/case-studies", caseStudyRoutes);
 app.use("/api/admin", adminRoutes);
 
@@ -85,11 +85,8 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-
-// Setup standard infrastructure engine configuration wrapper
 const server = http.createServer(app);
 
-// SERVERLESS SAFEGUARD: Only spin up active WebSockets if NOT running on Vercel
 if (!process.env.VERCEL) {
   const io = new IOServer(server, {
     cors: { origin: allowedOrigins },
@@ -129,19 +126,12 @@ if (!process.env.VERCEL) {
   });
 }
 
-// Local Execution Pipeline Wrapper
 if (!process.env.VERCEL) {
   connectDB().then(() => {
     server.listen(PORT, () => {
       console.log(`ScanX API running locally on http://localhost:${PORT}`);
     });
-    server.on("error", (err) => {
-      if (err.code === "EADDRINUSE") {
-        console.error(`Port ${PORT} is already in use.`);
-      } process.exit(1);
-    });
   });
 }
 
-// Export module instance for Vercel Serverless Processor Engine
 export default app;
