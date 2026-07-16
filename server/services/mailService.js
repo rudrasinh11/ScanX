@@ -13,7 +13,7 @@ function getTransporter() {
 }
 
 // ============================================================================
-// EMAIL 1: AUTOMATIC INSTANT THANK YOU (PENDING STATUS) - Unchanged
+// EMAIL 1: AUTOMATIC INSTANT THANK YOU (PENDING STATUS)
 // ============================================================================
 export async function sendClientThankYouEmail(submission) {
   const transporter = getTransporter();
@@ -68,11 +68,13 @@ export async function sendClientThankYouEmail(submission) {
 }
 
 // ============================================================================
-// EMAIL 2: MANUAL APPROVAL (CONTACTED STATUS) - UPGRADED WITH INTERACTIVE ACTION
+// EMAIL 2: MANUAL APPROVAL (CONTACTED STATUS)
 // ============================================================================
 export async function sendClientApprovalEmail(submission) {
   const transporter = getTransporter();
   if (!transporter) return;
+
+  const calendlyUrl = process.env.CALENDLY_URL || "https://calendly.com";
 
   const html = `
     <!DOCTYPE html>
@@ -86,9 +88,9 @@ export async function sendClientApprovalEmail(submission) {
         .header h1 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: 0.5px; }
         .content { padding: 40px 30px; line-height: 1.6; }
         .greeting { font-size: 18px; font-weight: 600; color: #1e3c72; margin-bottom: 15px; }
-        .status-badge { display: inline-block; background-color: #e8f0fe; color: #1a73e8; padding: 6px 16px; border-radius: 50px; font-weight: 600; font-size: 13px; margin-bottom: 25px; text-transform: uppercase; tracking-spacing: 0.5px; }
+        .status-badge { display: inline-block; background-color: #e8f0fe; color: #1a73e8; padding: 6px 16px; border-radius: 50px; font-weight: 600; font-size: 13px; margin-bottom: 25px; text-transform: uppercase; }
         .action-container { text-align: center; margin: 35px 0; }
-        .btn-primary { display: inline-block; background-color: #1e3c72; color: #ffffff !important; text-decoration: none; padding: 14px 30px; font-weight: 600; font-size: 15px; border-radius: 6px; box-shadow: 0 4px 6px rgba(30,60,114,0.15); transition: background-color 0.2s; }
+        .btn-primary { display: inline-block; background-color: #1e3c72; color: #ffffff !important; text-decoration: none; padding: 14px 30px; font-weight: 600; font-size: 15px; border-radius: 6px; box-shadow: 0 4px 6px rgba(30,60,114,0.15); }
         .info-list { background-color: #f8f9fa; border-radius: 6px; padding: 20px 25px; margin: 25px 0; border: 1px dashed #ced4da; }
         .info-list h4 { margin: 0 0 10px 0; color: #1e3c72; font-size: 15px; }
         .info-list ul { margin: 0; padding-left: 20px; }
@@ -108,7 +110,7 @@ export async function sendClientApprovalEmail(submission) {
           <p>The next phase requires a brief 15-minute diagnostic sync to refine our metric data targets and lock in your custom research milestones.</p>
           
           <div class="action-container">
-            <a href="https://calendly.com/your-profile" target="_blank" class="btn-primary">Schedule Strategy Sync</a>
+            <a href="${calendlyUrl}" target="_blank" class="btn-primary">Schedule Strategy Sync</a>
           </div>
 
           <div class="info-list">
@@ -134,17 +136,19 @@ export async function sendClientApprovalEmail(submission) {
     from: process.env.MAIL_FROM || process.env.SMTP_USER,
     to: submission.email,
     subject: `Action Required: Strategy Alignment for ${submission.businessName}`,
-    text: `Hi ${submission.name}, your request for ${submission.businessName} has been accepted! Please book your strategy sync session here: https://calendly.com/your-profile`,
+    text: `Hi ${submission.name}, your request for ${submission.businessName} has been accepted! Please book your strategy sync session here: ${calendlyUrl}`,
     html,
   });
 }
 
 // ============================================================================
-// EMAIL 3: CONVERSION / WELCOME (CONVERTED STATUS) - PREMIUM LOOK & CHECKLIST
+// EMAIL 3: CONVERSION / WELCOME (CONVERTED STATUS)
 // ============================================================================
 export async function sendClientOnboardingEmail(submission) {
   const transporter = getTransporter();
   if (!transporter) return;
+
+  const clientHubUrl = process.env.CLIENT_HUB_URL || "https://scanx-market.vercel.app";
 
   const html = `
     <!DOCTYPE html>
@@ -158,7 +162,7 @@ export async function sendClientOnboardingEmail(submission) {
         .header h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 0.5px; }
         .content { padding: 40px 35px; line-height: 1.6; }
         .greeting { font-size: 20px; font-weight: 600; color: #11998e; margin-bottom: 15px; }
-        .status-badge { display: inline-block; background-color: #e6fffa; color: #00a389; padding: 6px 18px; border-radius: 50px; font-weight: 700; font-size: 13px; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .status-badge { display: inline-block; background-color: #e6fffa; color: #00a389; padding: 6px 18px; border-radius: 50px; font-weight: 700; font-size: 13px; margin-bottom: 25px; text-transform: uppercase; }
         
         .milestone-box { background-color: #fdfdfd; border: 1px solid #e2e8f0; border-radius: 8px; padding: 25px; margin: 30px 0; }
         .milestone-title { font-weight: 700; color: #1a202c; margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #edf2f7; padding-bottom: 10px; font-size: 15px; }
@@ -189,7 +193,7 @@ export async function sendClientOnboardingEmail(submission) {
           </div>
 
           <div class="action-container">
-            <a href="https://your-dashboard-link.com" target="_blank" class="btn-success">Access Client Hub</a>
+            <a href="${clientHubUrl}" target="_blank" class="btn-success">Access Client Hub</a>
           </div>
 
           <p>A confirmation notification containing access configurations will follow shortly. We are proud to support your next level of market growth.</p>
@@ -206,10 +210,58 @@ export async function sendClientOnboardingEmail(submission) {
     from: process.env.MAIL_FROM || process.env.SMTP_USER,
     to: submission.email,
     subject: `🚨 Confirmed: Onboarding Active for ${submission.businessName}`,
-    text: `Welcome to ScanX, ${submission.name}! Your research partnership framework is now officially active. Access your hub here: https://your-dashboard-link.com`,
+    text: `Welcome to ScanX, ${submission.name}! Your research partnership framework is now officially active. Access your hub here: ${clientHubUrl}`,
     html,
   });
 }
 
-// Keep your existing sendAdminNewRequestEmail function here untouched...
-export async function sendAdminNewRequestEmail(submission) { /* ... existing code ... */ }
+// ============================================================================
+// EMAIL 4: INTERNAL SYSTEM NOTIFICATION FOR ADMIN
+// ============================================================================
+export async function sendAdminNewRequestEmail(submission) {
+  const transporter = getTransporter();
+  if (!transporter) return;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f6f9; color: #333333; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 6px; overflow: hidden; border: 1px solid #dcdcdc; }
+        .header { background-color: #2c3e50; padding: 20px; text-align: center; color: #ffffff; }
+        .content { padding: 30px; line-height: 1.5; }
+        .table-data { w-full; border-collapse: collapse; margin-top: 15px; }
+        .table-data td { padding: 8px; border-bottom: 1px solid #eeeeee; font-size: 14px; }
+        .table-data td.label { font-weight: bold; color: #555555; width: 140px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header"><h2>New ScanX Lead Form Entry</h2></div>
+        <div class="content">
+          <p>An operator submission intake profile has been logged inside the database cluster pipeline.</p>
+          <table class="table-data">
+            <tr><td class="label">Client Name:</td><td>${submission.name}</td></tr>
+            <tr><td class="label">Business:</td><td>${submission.businessName}</td></tr>
+            <tr><td class="label">Email:</td><td>${submission.email}</td></tr>
+            <tr><td class="label">Phone:</td><td>${submission.phone || "Not provided"}</td></tr>
+            <tr><td class="label">Industry:</td><td>${submission.industry}</td></tr>
+            <tr><td class="label">Challenge:</td><td>${submission.biggestChallenge}</td></tr>
+          </table>
+          <p style="margin-top:25px; font-size:13px; color:#777;">Process updates through your secure administrative route context panel tools.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return transporter.sendMail({
+    from: process.env.MAIL_FROM || process.env.SMTP_USER,
+    to: process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SMTP_USER,
+    subject: `🚨 Alert: New Intake Request from ${submission.businessName}`,
+    text: `New research brief received from ${submission.name} (${submission.businessName}).`,
+    html,
+  });
+}
