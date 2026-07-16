@@ -19,8 +19,9 @@ const app = express();
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 const allowedOrigins = [
-  process.env.CLIENT_URL || "http://localhost:5173", 
-  "https://scanx-market.vercel.app"
+  "http://localhost:5173",
+  "https://scanx-market.vercel.app",
+  "https://scanx-market-rudrasinh11s-projects.vercel.app" // Add your alternative Vercel alias preview branches just in case
 ];
 
 app.use(
