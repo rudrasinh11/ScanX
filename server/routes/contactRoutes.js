@@ -7,6 +7,7 @@ import {
 } from "../controllers/contactController.js";
 import adminAuth from "../middleware/adminAuth.js";
 import mongoose from "mongoose";
+import ContactSubmission from "../models/ContactSubmission.js"; // FIXED: Moved to top-level static import!
 
 const router = express.Router();
 
@@ -31,7 +32,8 @@ router.patch("/:id/status", adminAuth, async (req, res) => {
     const { status } = req.body;
     if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid submission id." });
     if (!["pending", "contacted", "converted"].includes(status)) return res.status(400).json({ message: "Invalid status." });
-    const ContactSubmission = await import("../models/ContactSubmission.js").then(m=>m.default);
+    
+    // FIXED: Removed the dynamic 'await import' crash-point
     const doc = await ContactSubmission.findByIdAndUpdate(id, { status }, { new: true }).exec();
     return res.json(doc);
   } catch (e) { console.error(e); return res.status(500).json({ message: e.message }); }
@@ -41,7 +43,8 @@ router.delete("/:id", adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid submission id." });
-    const ContactSubmission = await import("../models/ContactSubmission.js").then(m=>m.default);
+    
+    // FIXED: Removed the dynamic 'await import' crash-point
     await ContactSubmission.findByIdAndDelete(id).exec();
     return res.json({ ok: true });
   } catch (e) { console.error(e); return res.status(500).json({ message: e.message }); }
