@@ -52,6 +52,8 @@ export default function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="case-studies" element={<CaseStudiesAdmin />} />
             <Route path="submissions" element={<Submissions />} />
+            <Route path="/something" element={<AdminDashboard />} />
+            <Route path="/panel" element={<Login />} />
           </Route>
         </Routes>
       </main>
