@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Download, Search, UploadCloud, FileText, Plus, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Reveal from "../../components/Reveal.jsx"; // Adjusted to match deep folder structure relative depth
+import Reveal from "../../components/Reveal.jsx"; 
 import { StaggerGrid, StaggerItem } from "../../components/StaggerGrid.jsx";
 import api from "../../lib/api.js";
 
