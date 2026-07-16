@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Download, Search, UploadCloud, FileText, Plus, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Reveal from "../../components/Reveal.jsx"; 
-import { StaggerGrid, StaggerItem } from "../../components/StaggerGrid.jsx";
-import api from "../../lib/api.js";
+import Reveal from "../components/Reveal.jsx"; // FIXED: Restored to single double-dot path mapping
+import { StaggerGrid, StaggerItem } from "../components/StaggerGrid.jsx"; // FIXED: Restored to single double-dot path mapping
+import api from "../lib/api.js"; // FIXED: Restored to single double-dot path mapping
 
 const fallback = [
   { slug: "coastal-cafe-group", industry: "Hospitality", businessName: "Coastal Café Group", objective: "Improve repeat visit rate and local search visibility.", tags: ["Reviews", "Local SEO", "Customer Journey"] },
@@ -260,8 +260,7 @@ export default function CaseStudies() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search reports…"
               className="w-full pl-10 pr-4 py-2.5 text-sm border border-line rounded-full bg-bg focus:border-gold outline-none transition-colors"
-            >
-            </input>
+            />
           </div>
         </Reveal>
 
