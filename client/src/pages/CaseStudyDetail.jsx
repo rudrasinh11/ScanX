@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download, FileText } from "lucide-react";
 import Reveal from "../components/Reveal.jsx";
 import Button from "../components/Button.jsx";
 import api from "../lib/api.js";
@@ -15,16 +15,44 @@ export default function CaseStudyDetail() {
     api
       .get(`/case-studies/${slug}`)
       .then((res) => {
-        setData(res.data);
-        setStatus("ok");
+        if (res.data) {
+          setData(res.data);
+          setStatus("ok");
+        } else {
+          // Absolute absolute backup routing context targeting scanx-a directly
+          fetch(`https://scanx-a.vercel.app/api/case-studies/${slug}`)
+            .then((r) => r.json())
+            .then((backupData) => {
+              if (backupData) {
+                setData(backupData);
+                setStatus("ok");
+              } else {
+                setStatus("notfound");
+              }
+            })
+            .catch(() => setStatus("notfound"));
+        }
       })
       .catch((err) => {
-        setStatus(err?.response?.status === 404 ? "notfound" : "offline");
+        // Backup request attempt to bypass configuration issues
+        fetch(`https://scanx-a.vercel.app/api/case-studies/${slug}`)
+          .then((r) => r.json())
+          .then((backupData) => {
+            if (backupData) {
+              setData(backupData);
+              setStatus("ok");
+            } else {
+              setStatus(err?.response?.status === 404 ? "notfound" : "offline");
+            }
+          })
+          .catch(() => {
+            setStatus(err?.response?.status === 404 ? "notfound" : "offline");
+          });
       });
   }, [slug]);
 
   if (status === "loading") {
-    return <div className="pt-40 pb-32 text-center text-inksoft">Loading report…</div>;
+    return <div className="pt-40 pb-32 text-center text-inksoft">Loading dynamic analytics profile…</div>;
   }
 
   if (status === "notfound") {
@@ -44,8 +72,7 @@ export default function CaseStudyDetail() {
       <div className="pt-40 pb-32 text-center px-5">
         <h1 className="text-2xl font-bold mb-3">Report unavailable</h1>
         <p className="text-inksoft mb-8">
-          The ScanX API isn't reachable right now, so this report couldn't be loaded from
-          MongoDB. Start the backend and try again.
+          The ScanX API isn't reachable right now, so this report couldn't be loaded from MongoDB.
         </p>
         <Button to="/case-studies" variant="secondary">
           <ArrowLeft size={15} /> Back to case studies
@@ -54,91 +81,69 @@ export default function CaseStudyDetail() {
     );
   }
 
-  const sections = [
-    { label: "Summary", value: data.summary },
-    { label: "Customer Journey", value: data.customerJourney },
-    { label: "Website Audit", value: data.websiteAudit },
-    { label: "Competitor Analysis", value: data.competitorAnalysis },
-  ].filter((s) => s.value);
+  // Formatting absolute cloud CDN or API file paths cleanly
+  const resolvedPdfUrl = data.pdfUrl?.startsWith("http")
+    ? data.pdfUrl
+    : `https://scanx-a.vercel.app${data.pdfUrl}`;
 
   return (
-    <div className="pt-28 sm:pt-32 pb-20 sm:pb-28">
-      <div className="max-w-[900px] mx-auto px-5 sm:px-8">
+    <div className="pt-28 sm:pt-32 pb-20 sm:pb-28 bg-[#fafafa] text-black min-h-screen">
+      <div className="max-w-[1040px] mx-auto px-5 sm:px-8">
+        
         <Reveal>
-          <Link to="/case-studies" className="inline-flex items-center gap-1.5 text-sm text-inksoft hover:text-gold transition-colors mb-8">
+          <Link to="/case-studies" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gold transition-colors mb-8 font-semibold">
             <ArrowLeft size={15} /> Back to case studies
           </Link>
-          <div className="font-num text-xs tracking-[0.14em] uppercase text-gold mb-4">{data.industry}</div>
-          <h1 className="text-[30px] sm:text-4xl lg:text-5xl leading-tight mb-4">{data.businessName}</h1>
-          <p className="text-base sm:text-lg text-inksoft leading-relaxed mb-8">{data.objective}</p>
-          <div className="flex flex-wrap gap-2 mb-12">
-            {(data.tags || []).map((t) => (
-              <span key={t} className="text-xs bg-raised px-3 py-1.5 rounded-full text-inksoft">{t}</span>
+          <div className="text-xs font-bold uppercase tracking-wider text-gold mb-3">{data.industry || "General"}</div>
+          <h1 className="text-[32px] sm:text-5xl font-bold tracking-tight mb-4 text-black">{data.businessName}</h1>
+          <p className="text-base sm:text-lg text-gray-600 leading-relaxed mb-6">{data.objective}</p>
+          
+          <div className="flex flex-wrap gap-2 mb-10">
+            {(Array.isArray(data.tags) ? data.tags : typeof data.tags === "string" ? data.tags.split(",") : []).map((t, i) => (
+              <span key={i} className="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full font-medium">
+                {t.trim()}
+              </span>
             ))}
           </div>
         </Reveal>
 
-        {sections.map((s) => (
-          <Reveal key={s.label} className="mb-10">
-            <h2 className="text-xl font-heading font-bold mb-3">{s.label}</h2>
-            <p className="text-inksoft leading-relaxed">{s.value}</p>
+        {/* EXECUTIVE PROFILE EXECUTIVE SUMMARY MODULE */}
+        {data.summary && (
+          <Reveal className="mb-10 border border-gray-200/60 bg-white rounded-md p-6 sm:p-8 shadow-sm">
+            <h2 className="text-lg font-bold mb-3 text-black border-b border-gray-100 pb-2">Executive Summary</h2>
+            <p className="text-gray-700 leading-relaxed whitespace-pre-line text-sm sm:text-base">{data.summary}</p>
           </Reveal>
-        ))}
+        )}
 
-        {data.swot && (
-          <Reveal className="mb-10">
-            <h2 className="text-xl font-heading font-bold mb-4">SWOT Analysis</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {["strengths", "weaknesses", "opportunities", "threats"].map((key) => (
-                <div key={key} className="border border-line rounded-md p-5">
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gold mb-3 capitalize">{key}</h3>
-                  <ul className="space-y-2 text-sm text-inksoft">
-                    {(data.swot[key] || []).map((item, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="text-gold">•</span> {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+        {/* ✅ FIXED: FULL INTERACTIVE BROADCAST IFRAME PDF REPORT VIEWER CONTAINER */}
+        {data.pdfUrl && (
+          <Reveal className="mb-12 border border-gray-200/80 rounded-md overflow-hidden bg-gray-50 shadow-sm h-[700px] flex flex-col">
+            <div className="bg-gray-900 px-4 py-3 flex items-center justify-between text-white text-xs font-semibold">
+              <div className="flex items-center gap-2">
+                <FileText size={14} className="text-gold" /> Active Analytics Document
+              </div>
+              <a 
+                href={resolvedPdfUrl} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="flex items-center gap-1 bg-gold text-white px-3 py-1 rounded-sm hover:bg-black transition-colors font-medium text-[11px]"
+              >
+                Download PDF <Download size={12} />
+              </a>
             </div>
+            
+            <iframe 
+              src={`https://docs.google.com/gview?url=${encodeURIComponent(resolvedPdfUrl)}&embedded=true`} 
+              className="w-full flex-1 border-none bg-white"
+              title="ScanX Independent Analytical Brief Document Previewer"
+            />
           </Reveal>
         )}
 
-        {data.growthOpportunities?.length > 0 && (
-          <Reveal className="mb-10">
-            <h2 className="text-xl font-heading font-bold mb-4">Growth Opportunities</h2>
-            <ul className="space-y-3">
-              {data.growthOpportunities.map((g, i) => (
-                <li key={i} className="flex gap-3 text-inksoft">
-                  <span className="font-num text-gold text-sm mt-0.5">{String(i + 1).padStart(2, "0")}</span>
-                  {g}
-                </li>
-              ))}
-            </ul>
-          </Reveal>
-        )}
-
-        {data.roadmap?.length > 0 && (
-          <Reveal className="mb-14">
-            <h2 className="text-xl font-heading font-bold mb-4">Roadmap</h2>
-            <div className="space-y-4">
-              {data.roadmap.map((r, i) => (
-                <div key={i} className="border-l-2 border-gold pl-5 py-1">
-                  <div className="text-sm font-semibold text-gold mb-1">{r.phase}</div>
-                  <div className="text-inksoft text-sm">{r.detail}</div>
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        )}
-
-        <Reveal className="px-6 py-5 border-l-2 border-gold bg-raised text-[13px] text-inksoft leading-relaxed rounded-r">
-          This report was independently prepared using publicly available information for
-          educational and portfolio purposes. It does not represent a commissioned consulting
-          engagement, and is not affiliated with or endorsed by {data.businessName}. It will be
-          removed upon request from the business owner.
+        <Reveal className="px-6 py-5 border-l-2 border-gold bg-gray-100/60 text-[13px] text-gray-500 leading-relaxed rounded-r border border-y-gray-200/40 border-r-gray-200/40 shadow-sm">
+          This report was independently prepared using publicly available information for educational and portfolio purposes. It does not represent a commissioned consulting engagement, and is not affiliated with or endorsed by **{data.businessName}**. It will be removed immediately upon request from the active business owner.
         </Reveal>
+
       </div>
     </div>
   );
