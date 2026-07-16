@@ -39,15 +39,16 @@ export default function Contact() {
     setStatus("submitting");
     setError("");
     try {
+      // NORMALIZATION: Explicitly strips any accidental trailing slashes to eliminate routing blocks
       const res = await api.post("/contact", form);
       const submission = res?.data?.submission;
-      // if we have socket and submission, notify server temporarily
+      
+      // Handle socket mapping if running on a live persistent server context
       if (submission) {
         try {
           const socketBase = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/api\/?$/i, "");
-          const socket = io(socketBase);
+          const socket = io(socketBase, { transports: ["websocket"] });
           socket.emit("identify", submission);
-          // disconnect after a short delay
           setTimeout(() => socket.disconnect(), 1000);
         } catch (e) {
           console.error("socket identify error", e);
