@@ -9,6 +9,7 @@ import { connectDB } from "./config/db.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import caseStudyRoutes from "./routes/caseStudyRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import ContactSubmission from "./models/ContactSubmission.js"; // Statically imported here to fix runtime compilation crashes!
 
 dotenv.config();
 
@@ -40,7 +41,7 @@ app.use(
 
 app.use(express.json({ limit: "100kb" }));
 
-// SERVERLESS FIX: Intercept every single execution call to verify MongoDB is alive
+// Intercept every single execution call to verify MongoDB is alive
 app.use(async (req, res, next) => {
   try {
     await connectDB();
@@ -105,13 +106,10 @@ if (!process.env.VERCEL) {
         clients.set(socket.id, current);
 
         if (payload && (payload._id || payload.id)) {
-          const ContactSubmission = await import("./models/ContactSubmission.js").then(m => m.default).catch(()=>null);
           const id = payload._id || payload.id;
-          if (ContactSubmission) {
-            try {
-              await ContactSubmission.findByIdAndUpdate(id, { socketId: socket.id, active: true }).exec();
-            } catch (e) { console.error('Failed to persist socket mapping', e.message); }
-          }
+          try {
+            await ContactSubmission.findByIdAndUpdate(id, { socketId: socket.id, active: true }).exec();
+          } catch (e) { console.error('Failed to persist socket mapping', e.message); }
         }
         io.emit("clients", Array.from(clients.values()));
       } catch (e) {
@@ -122,10 +120,7 @@ if (!process.env.VERCEL) {
     socket.on("disconnect", () => {
       (async () => {
         try {
-          const ContactSubmission = await import("./models/ContactSubmission.js").then(m => m.default).catch(()=>null);
-          if (ContactSubmission) {
-            await ContactSubmission.findOneAndUpdate({ socketId: socket.id }, { active: false, $unset: { socketId: 1 } }).exec();
-          }
+          await ContactSubmission.findOneAndUpdate({ socketId: socket.id }, { active: false, $unset: { socketId: 1 } }).exec();
         } catch (e) { console.error('disconnect persist error', e.message); }
       })();
       clients.delete(socket.id);
