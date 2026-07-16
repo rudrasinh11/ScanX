@@ -37,6 +37,7 @@ export default function App() {
       <Navbar />
       <main className="flex-1">
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/case-studies" element={<CaseStudies />} />
           <Route path="/case-studies/:slug" element={<CaseStudyDetail />} />
@@ -46,15 +47,19 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/disclaimer" element={<Disclaimer />} />
-          <Route path="*" element={<NotFound />} />
+          
+          {/* Admin Login Route */}
           <Route path="/admin/login" element={<AdminLogin />} />
+          
+          {/* Authentic Nested Admin Layout Routes */}
           <Route path="/admin/*" element={<AdminLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="case-studies" element={<CaseStudiesAdmin />} />
             <Route path="submissions" element={<Submissions />} />
-            <Route path="/something" element={<AdminDashboard />} />
-            <Route path="/panel" element={<Login />} />
           </Route>
+
+          {/* Catch-all 404 handler (Must be placed at the very bottom) */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />
