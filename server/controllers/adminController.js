@@ -5,20 +5,29 @@ export async function createCaseStudyWithUpload(req, res) {
   try {
     const body = req.body || {};
     const pdfFile = req.file;
+    
     if (pdfFile) {
-      // save public URL
+      // If deployed on Vercel, store the direct static path mapping link
       body.pdfUrl = `/uploads/${pdfFile.filename}`;
     }
-    // minimal required fields: slug, industry, businessName, objective
+    
+    // Auto-generate a clean URL slug if one wasn't explicitly provided
+    const slug = body.slug || body.businessName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .trim();
+
     const doc = await CaseStudy.create({
-      slug: body.slug,
+      slug,
       industry: body.industry,
       businessName: body.businessName,
       objective: body.objective,
-      tags: body.tags ? (Array.isArray(body.tags) ? body.tags : body.tags.split(",").map(s=>s.trim())) : [],
+      tags: body.tags ? (Array.isArray(body.tags) ? body.tags : body.tags.split(",").map(s => s.trim())) : [],
       summary: body.summary || "",
       pdfUrl: body.pdfUrl || "",
     });
+
     return res.status(201).json(doc);
   } catch (err) {
     console.error(err);
