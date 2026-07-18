@@ -21,7 +21,7 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 const allowedOrigins = [
   "http://localhost:5173",
   "https://scanx-market.vercel.app",
-  "https://scanx-market-rudrasinh11s-projects.vercel.app" // Add your alternative Vercel alias preview branches just in case
+  "https://scanx-market-rudrasinh11s-projects.vercel.app"
 ];
 
 app.use(
@@ -69,63 +69,68 @@ app.get("/", (req, res) => {
   res.send("ScanX API Server Active & Ready");
 });
 
-// ✅ FIXED: Single clean registration path mapping combining limiter + logic smoothly
 app.use("/api/contact", contactLimiter, contactRoutes);
 app.use("/api/case-studies", caseStudyRoutes);
 app.use("/api/admin", adminRoutes);
 
-// Shared in-memory map context (Graceful fallback when running under serverless function routers)
+// Shared in-memory map context
 const clients = new Map(); 
 
 app.get("/api/admin/clients", (req, res) => {
   return res.json({ clients: Array.from(clients.values()) });
 });
 
-app.use((req, res) => {
-  res.status(404).json({ message: "Route not found." });
-});
-
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
-if (!process.env.VERCEL) {
-  const io = new IOServer(server, {
-    cors: { origin: allowedOrigins },
-  });
+// ✅ FIXED: Initialize IOServer out of process.env.VERCEL blocker check, optimized for serverless architecture
+const io = new IOServer(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  transports: ["polling", "websocket"],
+  allowEIO3: true
+});
 
-  io.on("connection", (socket) => {
-    clients.set(socket.id, { connectedAt: new Date().toISOString(), submission: null });
-    io.emit("clients", Array.from(clients.values()));
+io.on("connection", (socket) => {
+  clients.set(socket.id, { connectedAt: new Date().toISOString(), submission: null });
+  io.emit("clients", Array.from(clients.values()));
 
-    socket.on("identify", async (payload) => {
-      try {
-        const current = clients.get(socket.id) || { connectedAt: new Date().toISOString(), submission: null };
-        current.submission = payload;
-        clients.set(socket.id, current);
+  socket.on("identify", async (payload) => {
+    try {
+      const current = clients.get(socket.id) || { connectedAt: new Date().toISOString(), submission: null };
+      current.submission = payload;
+      clients.set(socket.id, current);
 
-        if (payload && (payload._id || payload.id)) {
-          const id = payload._id || payload.id;
-          try {
-            await ContactSubmission.findByIdAndUpdate(id, { socketId: socket.id, active: true }).exec();
-          } catch (e) { console.error('Failed to persist socket mapping', e.message); }
-        }
-        io.emit("clients", Array.from(clients.values()));
-      } catch (e) {
-        console.error("identify handler error:", e.message);
-      }
-    });
-
-    socket.on("disconnect", () => {
-      (async () => {
+      if (payload && (payload._id || payload.id)) {
+        const id = payload._id || payload.id;
         try {
-          await ContactSubmission.findOneAndUpdate({ socketId: socket.id }, { active: false, $unset: { socketId: 1 } }).exec();
-        } catch (e) { console.error('disconnect persist error', e.message); }
-      })();
-      clients.delete(socket.id);
+          await ContactSubmission.findByIdAndUpdate(id, { socketId: socket.id, active: true }).exec();
+        } catch (e) { console.error('Failed to persist socket mapping', e.message); }
+      }
       io.emit("clients", Array.from(clients.values()));
-    });
+    } catch (e) {
+      console.error("identify handler error:", e.message);
+    }
   });
-}
+
+  socket.on("disconnect", () => {
+    (async () => {
+      try {
+        await ContactSubmission.findOneAndUpdate({ socketId: socket.id }, { active: false, $unset: { socketId: 1 } }).exec();
+      } catch (e) { console.error('disconnect persist error', e.message); }
+    })();
+    clients.delete(socket.id);
+    io.emit("clients", Array.from(clients.values()));
+  });
+});
+
+// App routing fallback rules
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found." });
+});
 
 if (!process.env.VERCEL) {
   connectDB().then(() => {

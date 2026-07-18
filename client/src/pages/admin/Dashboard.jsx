@@ -10,10 +10,21 @@ export default function Dashboard() {
   const [caseStudyCount, setCaseStudyCount] = useState(0);
 
   useEffect(() => {
-    // Socket connection for live clients
+    // Socket connection for live clients matching Vercel HTTP routing fallbacks
     const base = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
     const socketBase = base.replace(/\/api\/?$/i, "");
-    const socket = io(socketBase);
+    
+    const socket = io(socketBase, {
+      transports: ["polling", "websocket"],
+      withCredentials: true,
+      autoConnect: true,
+      reconnectionAttempts: 5
+    });
+
+    socket.on("connect_error", (err) => {
+      console.warn("Socket connection fallback active:", err.message);
+    });
+
     socket.on("clients", (list) => setClients(list || []));
     
     // Fetch initial data
@@ -30,12 +41,10 @@ export default function Dashboard() {
       })
       .catch(() => {});
 
-    // TODO: Fetch case studies count when endpoint available
-    // api.get('/case-studies?page=1&limit=1', { headers: { Authorization: `Bearer ${token}` } })
-    //   .then(r => setCaseStudyCount(r.data.total || 0))
-    //   .catch(() => {});
-
-    return () => socket.disconnect();
+    return () => {
+      socket.off("clients");
+      socket.disconnect();
+    };
   }, []);
 
   const totalSubmissions = submissions.length;
@@ -127,7 +136,7 @@ export default function Dashboard() {
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-green-500"></div>
                       <span className="text-xs text-gray-500">
-                        {new Date(c.connectedAt).toLocaleTimeString()}
+                        {c.connectedAt ? new Date(c.connectedAt).toLocaleTimeString() : 'Recent'}
                       </span>
                     </div>
                   </div>
