@@ -1,46 +1,48 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Download, FileText, Lock, CreditCard } from "lucide-react";
-import Reveal from "../components/Reveal.jsx";
-import Button from "../components/Button.jsx";
+import { ArrowLeft, FileText, ShieldCheck } from "lucide-react";
 import api from "../lib/api.js";
 
 export default function CaseStudyDetail() {
   const { slug } = useParams();
   const [data, setData] = useState(null);
   const [status, setStatus] = useState("loading");
-  const [isUnlocked, setIsUnlocked] = useState(false); // Controls payment verification state
 
   useEffect(() => {
     setStatus("loading");
     api.get(`/case-studies/${slug}`)
-      .then((res) => { if (res.data) { setData(res.data); setStatus("ok"); } })
-      .catch(() => {
-        fetch(`https://scanx-a.vercel.app/api/case-studies/${slug}`)
-          .then(r => r.json())
-          .then(d => { setData(d); setStatus("ok"); })
-          .catch(() => setStatus("offline"));
+      .then((res) => { 
+        if (res.data) { 
+          setData(res.data); 
+          setStatus("ok"); 
+        } 
+      })
+      .catch((err) => {
+        console.error("Failed to load case study description:", err);
+        setStatus("offline");
       });
   }, [slug]);
 
-  const triggerPaymentGateway = () => {
-    alert("Redirecting securely to local UPI payment node platform handler for ₹20.00...");
-    // Mocking success transition loop context hooks for this workflow instance
-    setIsUnlocked(true);
-  };
+  // Anti-Copyright Protection: Disable right-clicks across the view frame interface
+  useEffect(() => {
+    const blockMenu = (e) => e.preventDefault();
+    document.addEventListener("contextmenu", blockMenu);
+    return () => document.removeEventListener("contextmenu", blockMenu);
+  }, []);
 
   if (status === "loading") return <div className="pt-40 text-center text-gray-400">Loading dynamic workspace context...</div>;
-  if (!data) return <div className="pt-40 text-center text-red-500">Report details are currently unavailable.</div>;
+  if (status === "offline" || !data) return <div className="pt-40 text-center text-red-500">Report details are currently unavailable.</div>;
 
-  const basePdf = data.pdfUrl?.startsWith("http") ? data.pdfUrl : `https://scanx-a.vercel.app${data.pdfUrl}`;
+  // Resolve backend file path host intelligently from dynamic configuration rules
+  const baseApiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  const serverBase = baseApiUrl.replace(/[()]/g, "").replace(/\/api\/?$/i, "").trim();
+  const basePdf = data.pdfUrl?.startsWith("http") ? data.pdfUrl : `${serverBase}${data.pdfUrl}`;
   
-  // ✅ AUTO-SPLIT PATH ARCHITECTURE: Appends explicit view filters if user hasn't completed purchase
-  const secureEmbedUrl = isUnlocked 
-    ? `https://docs.google.com/gview?url=${encodeURIComponent(basePdf)}&embedded=true`
-    : `https://docs.google.com/gview?url=${encodeURIComponent(basePdf)}&embedded=true#page=1`;
+  // Appends security presentation parameters to drop the printing/download buttons from the frame tools
+  const secureEmbedUrl = `https://docs.google.com/gview?url=${encodeURIComponent(basePdf)}&embedded=true&rm=minimal#toolbar=0&navpanes=0&scrollbar=0`;
 
   return (
-    <div className="pt-32 pb-20 bg-white text-black min-h-screen">
+    <div className="pt-32 pb-20 bg-white text-black min-h-screen select-none">
       <div className="max-w-[1040px] mx-auto px-5 sm:px-8">
         
         <Link to="/case-studies" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gold mb-6 font-semibold">
@@ -55,39 +57,34 @@ export default function CaseStudyDetail() {
           {data.summary}
         </div>
 
-        {/* PAYWALL FRAME CONTAINER */}
-        <div className="border border-gray-200 rounded-md overflow-hidden bg-gray-100 h-[750px] flex flex-col relative shadow-sm">
+        {/* SECURED VIEWER NODE PLATFORM CONTAINER */}
+        <div className="border border-gray-200 rounded-md overflow-hidden bg-gray-100 h-[800px] flex flex-col relative shadow-sm">
           <div className="bg-gray-900 px-4 py-3 flex items-center justify-between text-white text-xs font-semibold z-10">
             <div className="flex items-center gap-2">
               <FileText size={14} className="text-gold" /> 
-              {isUnlocked ? "🔓 Full Strategic Access Enabled" : "🔒 Free Preview Mode (Pages 1-5)"}
+              🔓 Full Portfolio Presentation Mode — Read Access Enabled
             </div>
-            {isUnlocked && (
-              <a href={basePdf} target="_blank" rel="noreferrer" className="bg-gold px-3 py-1 rounded-sm text-white font-bold">
-                Download PDF <Download size={12} />
-              </a>
-            )}
+            <span className="text-[10px] text-gray-400 flex items-center gap-1">
+              <ShieldCheck size={12} className="text-emerald-500" /> Source Copy Protection Active
+            </span>
           </div>
           
-          {/* Main Document Framework Viewer Node */}
-          <iframe src={secureEmbedUrl} className="w-full flex-1 border-none bg-white" title="PDF Viewer" />
-
-          {/* DYNAMIC LOCK OVERLAY PANEL */}
-          {!isUnlocked && (
-            <div className="absolute bottom-0 inset-x-0 h-1/2 bg-gradient-to-t from-black via-gray-900/95 to-transparent flex flex-col items-center justify-end text-center p-8 pb-16 text-white z-20">
-              <div className="bg-black/40 border border-gray-700 backdrop-blur-md p-6 rounded-md max-w-sm w-full shadow-lg">
-                <Lock className="text-gold mx-auto mb-3 animate-pulse" size={32} />
-                <h4 className="text-lg font-bold mb-1.5">Unlock the Remaining 11 Pages</h4>
-                <p className="text-xs text-gray-400 mb-5">Gain deep diagnostic insights, competitor matrices, SWOT audits, and the 30/60/90 operational roadmap.</p>
-                <button 
-                  onClick={triggerPaymentGateway}
-                  className="w-full bg-gold text-white font-bold text-sm py-3 px-4 rounded-sm hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 shadow-md"
-                >
-                  <CreditCard size={16} /> Pay ₹20.00 to Unlock
-                </button>
-              </div>
-            </div>
-          )}
+          <div className="w-full flex-1 relative bg-white overflow-hidden">
+            {/* 🛡️ TRANSPARENT GUARD SHIELD: Intercepts pointer events to block drag-selection or frame clicking */}
+            <div 
+              className="absolute inset-0 z-20 bg-transparent" 
+              style={{ pointerEvents: "auto", userSelect: "none" }}
+              onContextMenu={(e) => e.preventDefault()}
+            />
+            
+            {/* Embedded Sandbox Document Window */}
+            <iframe 
+              src={secureEmbedUrl} 
+              className="w-full h-full border-none pointer-events-none" 
+              title="Secured PDF Presentation Frame"
+              id="protected-document-viewer"
+            />
+          </div>
         </div>
       </div>
     </div>
