@@ -1,283 +1,153 @@
 import { useEffect, useState } from "react";
-import { Trash2, FileText, AlertCircle, CheckCircle, Link2, Pencil, X } from "lucide-react";
-import api from "../../lib/api.js";
-import { toast } from "../../lib/toast.js";
+import { useParams, Link } from "react-router-dom";
+import { ArrowLeft, FileText, ShieldCheck } from "lucide-react";
+import api from "../lib/api.js";
 
-const emptyForm = { slug: "", industry: "", businessName: "", objective: "", tags: "", summary: "", pdfUrl: "" };
+export default function CaseStudyDetail() {
+  const { slug } = useParams();
+  const [data, setData] = useState(null);
+  const [status, setStatus] = useState("loading");
+  const [isTabFocused, setIsTabFocused] = useState(true);
 
-export default function CaseStudies() {
-  const [form, setForm] = useState(emptyForm);
-  const [caseStudies, setCaseStudies] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [editingId, setEditingId] = useState(null); // null = "add" mode, otherwise "edit" mode
+  useEffect(() => {
+    setStatus("loading");
+    api.get(`/case-studies/${slug}`)
+      .then((res) => { 
+        if (res.data) { 
+          setData(res.data); 
+          setStatus("ok"); 
+        } 
+      })
+      .catch((err) => {
+        console.error("Failed to load case study description:", err);
+        setStatus("offline");
+      });
+  }, [slug]);
 
-  useEffect(() => { fetchList(); }, []);
+  // 🛡️ ANTI-THEFT AND INPUT HOOKS INTERCEPTION
+  useEffect(() => {
+    const blockMenu = (e) => e.preventDefault();
+    document.addEventListener("contextmenu", blockMenu);
 
-  async function fetchList(){
-    try{
-      const token = localStorage.getItem('adminToken');
-      const res = await api.get('/admin/case-studies', { headers: { Authorization: `Bearer ${token}` } });
-      setCaseStudies(res.data);
-    } catch(e){
-      console.error(e);
-      setError("Failed to load case studies");
-      toast.error("Failed to load case studies.");
-    }
-  }
-
-  function startEdit(cs) {
-    setEditingId(cs._id);
-    setForm({
-      slug: cs.slug || "",
-      industry: cs.industry || "",
-      businessName: cs.businessName || "",
-      objective: cs.objective || "",
-      tags: cs.tags || "",
-      summary: cs.summary || "",
-      pdfUrl: cs.pdfUrl || "",
-    });
-    setError("");
-    setSuccess("");
-    // Scroll form into view on smaller screens where the list is above the form
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function cancelEdit() {
-    setEditingId(null);
-    setForm(emptyForm);
-    setError("");
-  }
-
-  async function submit(e){
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    
-    if (!form.slug || !form.businessName || !form.industry || !form.pdfUrl) {
-      setError("Please fill in required fields: Slug, Business Name, Industry, and PDF Cloud Link");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const token = localStorage.getItem('adminToken');
-
-      if (editingId) {
-        // Update existing case study
-        await api.put(`/admin/case-studies/${editingId}`, form, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setSuccess("Case study updated successfully!");
-        toast.success("Case study updated successfully.");
-      } else {
-        // Send as standard JSON payload instead of multi-part FormData
-        await api.post('/admin/case-studies', form, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setSuccess("Case study registered successfully!");
-        toast.success("Case study saved successfully.");
+    const interceptKeys = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') e.preventDefault();
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') e.preventDefault();
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault();
+        navigator.clipboard.writeText("Protected Portfolio Content — Access Denied.");
       }
+    };
+    document.addEventListener("keydown", interceptKeys);
 
-      setForm(emptyForm);
-      setEditingId(null);
-      setTimeout(() => setSuccess(""), 3000);
-      fetchList();
-    } catch(e) {
-      setError(e?.response?.data?.message || "Failed to save case study");
-      toast.error("Failed to save case study.");
-      console.error(e);
-    } finally {
-      setIsLoading(false);
+    const handleVisibilityChange = () => setIsTabFocused(!document.hidden);
+    const handleWindowBlur = () => setIsTabFocused(false);
+    const handleWindowFocus = () => setIsTabFocused(true);
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleWindowBlur);
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      document.removeEventListener("contextmenu", blockMenu);
+      document.removeEventListener("keydown", interceptKeys);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleWindowBlur);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, []);
+
+  if (status === "loading") return <div className="pt-40 text-center text-gray-400">Loading workspace context...</div>;
+  if (status === "offline" || !data) return <div className="pt-40 text-center text-red-500">Report details are currently unavailable.</div>;
+
+  let secureTargetUrl = data.pdfUrl || "";
+
+  if (secureTargetUrl) {
+    if (secureTargetUrl.includes("drive.google.com")) {
+      if (secureTargetUrl.includes("/view")) {
+        secureTargetUrl = secureTargetUrl.split("/view")[0] + "/preview";
+      } else if (secureTargetUrl.includes("id=")) {
+        const urlParams = new URLSearchParams(new URL(secureTargetUrl).search);
+        const docId = urlParams.get("id");
+        if (docId) {
+          secureTargetUrl = `https://drive.google.com/file/d/${docId}/preview`;
+        }
+      }
     }
   }
 
-  async function deleteCase(id) {
-    if(!confirm("Delete this case study?")) return;
-    try {
-      const token = localStorage.getItem('adminToken');
-      await api.delete(`/admin/case-studies/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (editingId === id) cancelEdit(); // if you deleted the one you were editing, reset the form
-      fetchList();
-      setSuccess("Case study deleted successfully!");
-      toast.success("Case study deleted successfully.");
-      setTimeout(() => setSuccess(""), 3000);
-    } catch(e) {
-      setError("Failed to delete case study");
-      toast.error("Failed to delete case study.");
-      console.error(e);
-    }
-  }
+  // 🎨 Fixed High-Visibility Infinite Diagonal Watermark Matrix Vector (Bottom-Left to Top-Right text lines)
+  // Uses explicit color hex coding with a safe opacity filter that bypasses iframe bleed boundaries
+  const svgWatermarkPattern = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='200' viewBox='0 0 260 200'><text x='50%' y='50%' text-anchor='middle' fill='%237a7a7a' font-family='sans-serif' font-weight='900' font-size='26' opacity='0.22' transform='rotate(-30, 130, 100)'>ScanX</text></svg>")`;
 
   return (
-    <div className="space-y-6 text-gray-900">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Case Studies Dashboard</h1>
-        <p className="text-gray-600">Manage case studies portfolio via cross-platform cloud document nodes</p>
-      </div>
+    <div className="pt-24 sm:pt-32 pb-20 bg-white text-black min-h-screen select-none" style={{ userSelect: "none" }}>
+      <style>{`
+        @media print {
+          body { display: none !important; }
+        }
+      `}</style>
 
-      {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <AlertCircle size={18} className="text-red-600 flex-shrink-0" />
-          <p className="text-red-700 text-sm">{error}</p>
-        </div>
-      )}
-      
-      {success && (
-        <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <CheckCircle size={18} className="text-green-600 flex-shrink-0" />
-          <p className="text-green-700 text-sm">{success}</p>
-        </div>
-      )}
+      <div className="w-full max-w-[1040px] mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <Link to="/case-studies" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gold mb-6 font-semibold transition-colors">
+          <ArrowLeft size={15} /> Back to case studies
+        </Link>
+        
+        <h1 className="text-2xl sm:text-4xl font-bold mb-2 text-black break-words">{data.businessName}</h1>
+        <p className="text-sm sm:text-base text-gray-600 mb-6 break-words">{data.objective}</p>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <form onSubmit={submit} className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">
-                {editingId ? "Edit Case Study" : "Add New Case Study"}
-              </h2>
-              {editingId && (
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-700"
-                >
-                  <X size={14} /> Cancel
-                </button>
-              )}
+        <div className="border border-gray-200 bg-gray-50 rounded-md p-4 sm:p-6 mb-8 text-xs sm:text-sm text-gray-700 break-words">
+          <h3 className="font-bold text-sm sm:text-base text-black mb-2">Executive Overview Summary</h3>
+          {data.summary}
+        </div>
+
+        {/* SECURED VIEWER PLATFORM CONTAINER */}
+        <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-100 h-[550px] sm:h-[750px] lg:h-[850px] flex flex-col relative shadow-sm">
+          <div className="bg-gray-900 px-3 sm:px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between text-white text-[11px] sm:text-xs font-semibold gap-2 z-30 select-none">
+            <div className="flex items-center gap-2 truncate">
+              <FileText size={14} className="text-gold flex-shrink-0" /> 
+              <span className="truncate">🔓 Workspace — Presentation Mode Active</span>
             </div>
+            <span className="text-[9px] sm:text-[10px] text-gray-400 flex items-center gap-1 self-end sm:self-auto">
+              <ShieldCheck size={12} className="text-emerald-500" /> Dynamic Asset Protection Shield Active
+            </span>
+          </div>
+          
+          <div 
+            className={`w-full flex-1 relative bg-white transition-all duration-300 ${!isTabFocused ? 'blur-xl scale-95 select-none pointer-events-none' : ''}`}
+          >
+            {/* 🛡️ SECURITY LAYER: Multi-page overlapping dynamic watermark framework */}
+            {secureTargetUrl && (
+              <div 
+                className="absolute inset-0 pointer-events-none select-none z-20"
+                style={{ 
+                  backgroundImage: svgWatermarkPattern,
+                  backgroundRepeat: "repeat",
+                  userSelect: "none"
+                }}
+              />
+            )}
             
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Business Name *</label>
-              <input 
-                value={form.businessName} 
-                onChange={e=>setForm({...form,businessName:e.target.value})} 
-                placeholder="e.g., TechCorp Inc." 
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white text-black"
-                required
+            {secureTargetUrl ? (
+              <iframe 
+                src={secureTargetUrl}
+                className="w-full h-full border-none absolute inset-0 z-10"
+                title="Secured Document Streaming Node"
+                allow="autoplay"
+                style={{ pointerEvents: "auto" }}
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Slug *</label>
-              <input 
-                value={form.slug} 
-                onChange={e=>setForm({...form,slug:e.target.value})} 
-                placeholder="e.g., techcorp-success-story" 
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white text-black"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Industry *</label>
-              <input 
-                value={form.industry} 
-                onChange={e=>setForm({...form,industry:e.target.value})} 
-                placeholder="e.g., Technology" 
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white text-black"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">PDF Cloud URL Link *</label>
-              <div className="relative">
-                <Link2 size={16} className="absolute left-3 top-3 text-gray-400" />
-                <input 
-                  type="url"
-                  value={form.pdfUrl} 
-                  onChange={e=>setForm({...form,pdfUrl:e.target.value})} 
-                  placeholder="Paste Google Drive or shared cloud link" 
-                  className="w-full p-2.5 pl-9 border border-gray-300 rounded-lg text-sm bg-white text-black"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Objective</label>
-              <input 
-                value={form.objective} 
-                onChange={e=>setForm({...form,objective:e.target.value})} 
-                placeholder="Main objectives..." 
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white text-black"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Summary</label>
-              <textarea 
-                value={form.summary} 
-                onChange={e=>setForm({...form,summary:e.target.value})} 
-                placeholder="Brief summary paragraph..." 
-                rows="3"
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm resize-none bg-white text-black"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Tags</label>
-              <input 
-                value={form.tags} 
-                onChange={e=>setForm({...form,tags:e.target.value})} 
-                placeholder="Valuation, Audit, Tech" 
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white text-black"
-              />
-            </div>
-
-            <button 
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"
-            >
-              {isLoading
-                ? (editingId ? "Updating Record..." : "Saving Record...")
-                : (editingId ? "Update Case Study" : "Upload Case Study Link")}
-            </button>
-          </form>
-        </div>
-
-        <div className="lg:col-span-2">
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Case Studies ({caseStudies.length})</h2>
-
-            {caseStudies.length === 0 ? (
-              <div className="py-12 text-center text-gray-400 text-sm">No portfolio assets indexed.</div>
             ) : (
-              <div className="grid gap-4">
-                {caseStudies.map(cs => (
-                  <div
-                    key={cs._id}
-                    className={`border rounded-lg p-4 bg-gray-50 flex items-start justify-between text-black ${
-                      editingId === cs._id ? "border-blue-400 ring-1 ring-blue-200" : "border-gray-200"
-                    }`}
-                  >
-                    <div>
-                      <h3 className="font-bold text-gray-900">{cs.businessName}</h3>
-                      <p className="text-xs text-gray-500 mt-0.5">{cs.industry} • {cs.slug}</p>
-                      <p className="text-[11px] text-blue-600 font-mono truncate max-w-sm sm:max-w-md mt-1">{cs.pdfUrl}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button
-                        onClick={() => startEdit(cs)}
-                        className="p-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-md transition-colors"
-                        title="Edit case study"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button 
-                        onClick={() => deleteCase(cs._id)}
-                        className="p-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-md transition-colors"
-                        title="Delete case study"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 text-xs sm:text-sm z-10 relative px-4 text-center">
+                No active public document configuration linked to this configuration node.
+              </div>
+            )}
+
+            {/* Focus Loss Overlay */}
+            {!isTabFocused && (
+              <div className="absolute inset-0 z-40 bg-gray-900/60 backdrop-blur-md flex items-center justify-center text-white font-bold text-center p-4">
+                <div className="p-4 bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-w-xs text-xs sm:text-sm">
+                  Screen capture restriction engaged. Refocus window to resume presentation context.
+                </div>
               </div>
             )}
           </div>
