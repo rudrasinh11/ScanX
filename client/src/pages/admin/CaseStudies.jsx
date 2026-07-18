@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trash2, FileText, AlertCircle, CheckCircle, Link2 } from "lucide-react";
+import { Trash2, Edit3, XCircle, AlertCircle, CheckCircle, Link2 } from "lucide-react";
 import api from "../../lib/api.js";
 import { toast } from "../../lib/toast.js";
 
@@ -7,6 +7,7 @@ export default function CaseStudies() {
   const [form, setForm] = useState({ slug: "", industry: "", businessName: "", objective: "", tags: "", summary: "", pdfUrl: "" });
   const [caseStudies, setCaseStudies] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [editingId, setEditingId] = useState(null); // Tracks the item currently being updated
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -24,6 +25,29 @@ export default function CaseStudies() {
     }
   }
 
+  // Populates the control node form fields to execute live records adjustments
+  function handleEditClick(cs) {
+    setEditingId(cs._id);
+    setForm({
+      slug: cs.slug || "",
+      industry: cs.industry || "",
+      businessName: cs.businessName || "",
+      objective: cs.objective || "",
+      tags: cs.tags || "",
+      summary: cs.summary || "",
+      pdfUrl: cs.pdfUrl || ""
+    });
+    setError("");
+    setSuccess("");
+    toast.info(`Editing record context for ${cs.businessName}`);
+  }
+
+  // Discards the adjustment tracking state wrapper
+  function clearEditState() {
+    setEditingId(null);
+    setForm({ slug: "", industry: "", businessName: "", objective: "", tags: "", summary: "", pdfUrl: "" });
+  }
+
   async function submit(e){
     e.preventDefault();
     setError("");
@@ -38,16 +62,23 @@ export default function CaseStudies() {
     try {
       const token = localStorage.getItem('adminToken');
       
-      // Send as standard JSON payload instead of multi-part FormData
-      await api.post('/admin/case-studies', form, { 
-        headers: { 
-          Authorization: `Bearer ${token}` 
-        } 
-      });
+      if (editingId) {
+        // 🛠️ UPDATE ROUTE: Send PUT request when modifying an existing asset
+        await api.put(`/admin/case-studies/${editingId}`, form, { 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
+        setSuccess("Case study document updated successfully!");
+        toast.success("Case study modified successfully.");
+      } else {
+        // 🚀 CREATE ROUTE: Send POST request when inserting a new asset
+        await api.post('/admin/case-studies', form, { 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
+        setSuccess("Case study registered successfully!");
+        toast.success("Case study saved successfully.");
+      }
       
-      setSuccess("Case study registered successfully!");
-      toast.success("Case study saved successfully.");
-      setForm({ slug: "", industry: "", businessName: "", objective: "", tags: "", summary: "", pdfUrl: "" });
+      clearEditState();
       setTimeout(() => setSuccess(""), 3000);
       fetchList();
     } catch(e) {
@@ -64,6 +95,10 @@ export default function CaseStudies() {
     try {
       const token = localStorage.getItem('adminToken');
       await api.delete(`/admin/case-studies/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      
+      // If the currently edited asset gets removed, reset the form panel inputs
+      if (editingId === id) clearEditState();
+      
       fetchList();
       setSuccess("Case study deleted successfully!");
       toast.success("Case study deleted successfully.");
@@ -98,8 +133,19 @@ export default function CaseStudies() {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
-          <form onSubmit={submit} className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 space-y-4">
-            <h2 className="text-lg font-bold text-gray-900">Add New Case Study</h2>
+          <form onSubmit={submit} className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 space-y-4 relative">
+            
+            {/* Form Title & Context Badge */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-gray-900">
+                {editingId ? "Modify Case Study" : "Add New Case Study"}
+              </h2>
+              {editingId && (
+                <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold animate-pulse">
+                  Edit Active
+                </span>
+              )}
+            </div>
             
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Business Name *</label>
@@ -180,13 +226,26 @@ export default function CaseStudies() {
               />
             </div>
 
-            <button 
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"
-            >
-              {isLoading ? "Saving Record..." : "Upload Case Study Link"}
-            </button>
+            <div className="flex gap-2 pt-2">
+              {editingId && (
+                <button 
+                  type="button"
+                  onClick={clearEditState}
+                  className="flex items-center justify-center gap-1 w-1/3 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                >
+                  <XCircle size={14} /> Cancel
+                </button>
+              )}
+              <button 
+                type="submit"
+                disabled={isLoading}
+                className={`text-white font-semibold rounded-lg transition-colors disabled:opacity-50 text-sm py-2.5 ${
+                  editingId ? "bg-amber-600 hover:bg-amber-700 flex-1" : "w-full bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {isLoading ? "Saving Record..." : editingId ? "Update Configuration" : "Upload Case Study Link"}
+              </button>
+            </div>
           </form>
         </div>
 
@@ -200,17 +259,35 @@ export default function CaseStudies() {
               <div className="grid gap-4">
                 {caseStudies.map(cs => (
                   <div key={cs._id} className="border border-gray-200 rounded-lg p-4 bg-gray-50 flex items-start justify-between text-black">
-                    <div>
-                      <h3 className="font-bold text-gray-900">{cs.businessName}</h3>
+                    <div className="truncate pr-4 flex-1">
+                      <h3 className="font-bold text-gray-900 truncate">{cs.businessName}</h3>
                       <p className="text-xs text-gray-500 mt-0.5">{cs.industry} • {cs.slug}</p>
                       <p className="text-[11px] text-blue-600 font-mono truncate max-w-sm sm:max-w-md mt-1">{cs.pdfUrl}</p>
                     </div>
-                    <button 
-                      onClick={() => deleteCase(cs._id)}
-                      className="p-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-md transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    
+                    {/* Admin Actions Panel Cluster */}
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => handleEditClick(cs)}
+                        className={`p-2 rounded-md transition-colors ${
+                          editingId === cs._id 
+                            ? "bg-amber-100 text-amber-800 border border-amber-300" 
+                            : "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-transparent"
+                        }`}
+                        title="Load item configuration for adjustments"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                      
+                      <button 
+                        onClick={() => deleteCase(cs._id)}
+                        className="p-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-md border border-transparent transition-colors"
+                        title="Delete asset permanently"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+
                   </div>
                 ))}
               </div>

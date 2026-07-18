@@ -1,138 +1,157 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowRight, Search, Edit3 } from "lucide-react";
-import Reveal from "../components/Reveal.jsx"; 
-import { StaggerGrid, StaggerItem } from "../components/StaggerGrid.jsx"; 
-import api from "../lib/api.js"; 
+import { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { ArrowLeft, FileText, ShieldCheck } from "lucide-react";
+import api from "../lib/api.js";
 
-export default function CaseStudies() {
-  const [caseStudies, setCaseStudies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [industry, setIndustry] = useState("All");
-  const [query, setQuery] = useState("");
+export default function CaseStudyDetail() {
+  const { slug } = useParams();
+  const [data, setData] = useState(null);
+  const [status, setStatus] = useState("loading");
+  const [isTabFocused, setIsTabFocused] = useState(true);
 
-  const fetchStudies = () => {
-    setLoading(true);
-    api.get("/case-studies")
-      .then((res) => {
-        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-          setCaseStudies(res.data);
-          setLoading(false);
-        } else {
-          fetchBackupStream();
-        }
+  useEffect(() => {
+    setStatus("loading");
+    api.get(`/case-studies/${slug}`)
+      .then((res) => { 
+        if (res.data) { 
+          setData(res.data); 
+          setStatus("ok"); 
+        } 
       })
       .catch((err) => {
-        console.error("API error, pulling from backup domain stream:", err);
-        fetchBackupStream();
+        console.error("Failed to load case study description:", err);
+        setStatus("offline");
       });
-  };
+  }, [slug]);
 
-  const fetchBackupStream = () => {
-    fetch("https://scanx-a.vercel.app/api/case-studies")
-      .then(r => r.json())
-      .then(data => { 
-        if (Array.isArray(data)) setCaseStudies(data); 
-      })
-      .catch(err => console.error("Backup stream failure:", err))
-      .finally(() => setLoading(false));
-  };
+  // 🛡️ ANTI-THEFT AND INPUT HOOKS INTERCEPTION
+  useEffect(() => {
+    const blockMenu = (e) => e.preventDefault();
+    document.addEventListener("contextmenu", blockMenu);
 
-  useEffect(() => { fetchStudies(); }, []);
+    const interceptKeys = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') e.preventDefault();
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') e.preventDefault();
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault();
+        navigator.clipboard.writeText("Protected Portfolio Content — Access Denied.");
+      }
+    };
+    document.addEventListener("keydown", interceptKeys);
 
-  // Normalizes spaces and trims values cleanly
-  const industries = useMemo(() => {
-    const raw = caseStudies.map((c) => (c.industry || "General").trim());
-    return ["All", ...new Set(raw)];
-  }, [caseStudies]);
+    const handleVisibilityChange = () => setIsTabFocused(!document.hidden);
+    const handleWindowBlur = () => setIsTabFocused(false);
+    const handleWindowFocus = () => setIsTabFocused(true);
 
-  // 🛠️ BUGFIX: Robust character-insensitive filtering engine
-  const filtered = caseStudies.filter((c) => {
-    const normalizeString = (str) => 
-      String(str || "").toLowerCase().replace(/[^a-z0-9]/g, "").trim();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleWindowBlur);
+    window.addEventListener("focus", handleWindowFocus);
 
-    const cleanInd = normalizeString(c.industry || "General");
-    const cleanSelected = normalizeString(industry);
+    return () => {
+      document.removeEventListener("contextmenu", blockMenu);
+      document.removeEventListener("keydown", interceptKeys);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleWindowBlur);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, []);
 
-    const matchesIndustry = industry === "All" || cleanInd === cleanSelected;
-    const matchesQuery = !query || 
-      (c.businessName && c.businessName.toLowerCase().includes(query.toLowerCase()));
-    
-    return matchesIndustry && matchesQuery;
-  });
+  if (status === "loading") return <div className="pt-40 text-center text-gray-400">Loading workspace context...</div>;
+  if (status === "offline" || !data) return <div className="pt-40 text-center text-red-500">Report details are currently unavailable.</div>;
+
+  let secureTargetUrl = data.pdfUrl || "";
+
+  if (secureTargetUrl) {
+    if (secureTargetUrl.includes("drive.google.com")) {
+      if (secureTargetUrl.includes("/view")) {
+        secureTargetUrl = secureTargetUrl.split("/view")[0] + "/preview";
+      } else if (secureTargetUrl.includes("id=")) {
+        const urlParams = new URLSearchParams(new URL(secureTargetUrl).search);
+        const docId = urlParams.get("id");
+        if (docId) {
+          secureTargetUrl = `https://drive.google.com/file/d/${docId}/preview`;
+        }
+      }
+    }
+  }
+
+  // 🎨 Fixed High-Visibility Infinite Diagonal Watermark Matrix Vector (Bottom-Left to Top-Right text lines)
+  // Uses explicit color hex coding with a safe opacity filter that bypasses iframe bleed boundaries
+  const svgWatermarkPattern = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='200' viewBox='0 0 260 200'><text x='50%' y='50%' text-anchor='middle' fill='%237a7a7a' font-family='sans-serif' font-weight='900' font-size='26' opacity='0.22' transform='rotate(-30, 130, 100)'>ScanX</text></svg>")`;
 
   return (
-    <div className="pt-32 sm:pt-36 pb-20 sm:pb-28 bg-[#fafafa] min-h-screen">
-      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 lg:px-10">
-        
-        <Reveal className="max-w-2xl mb-10">
-          <div className="font-num text-xs tracking-[0.14em] uppercase text-gold mb-3">Featured Work</div>
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4 text-black">Independent Portfolio Case Studies</h1>
-          <p className="text-gray-600">Explore premium analytical business assets live.</p>
-        </Reveal>
+    <div className="pt-24 sm:pt-32 pb-20 bg-white text-black min-h-screen select-none" style={{ userSelect: "none" }}>
+      <style>{`
+        @media print {
+          body { display: none !important; }
+        }
+      `}</style>
 
-        {/* Categories Bar & Search */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-10">
-          <div className="flex flex-wrap gap-2">
-            {industries.map((ind) => (
-              <button
-                key={ind}
-                onClick={() => setIndustry(ind)}
-                className={`text-xs font-semibold px-4 py-2 rounded-full border transition-all ${
-                  industry === ind ? "bg-black text-white" : "bg-white text-gray-600 border-gray-200"
-                }`}
-              >
-                {ind}
-              </button>
-            ))}
-          </div>
-          <div className="relative w-full sm:w-64">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search reports..."
-              className="w-full px-4 py-2.5 pl-10 text-sm border border-gray-200 rounded-full bg-white outline-none text-black"
-            />
-            <Search className="absolute left-3.5 top-3.5 text-gray-400" size={14} />
-          </div>
+      <div className="w-full max-w-[1040px] mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <Link to="/case-studies" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gold mb-6 font-semibold transition-colors">
+          <ArrowLeft size={15} /> Back to case studies
+        </Link>
+        
+        <h1 className="text-2xl sm:text-4xl font-bold mb-2 text-black break-words">{data.businessName}</h1>
+        <p className="text-sm sm:text-base text-gray-600 mb-6 break-words">{data.objective}</p>
+
+        <div className="border border-gray-200 bg-gray-50 rounded-md p-4 sm:p-6 mb-8 text-xs sm:text-sm text-gray-700 break-words">
+          <h3 className="font-bold text-sm sm:text-base text-black mb-2">Executive Overview Summary</h3>
+          {data.summary}
         </div>
 
-        {loading ? (
-          <div className="text-center py-20 text-gray-500 text-sm">Loading dynamic portfolio grid entries...</div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-gray-500 text-sm">No workspace items found matching criteria.</div>
-        ) : (
-          <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((c) => (
-              <StaggerItem key={c._id || c.slug}>
-                <div className="border border-gray-200/70 rounded-md overflow-hidden bg-white shadow-sm flex flex-col h-full hover:shadow-md transition-shadow">
-                  <div className="p-6 flex flex-col flex-1">
-                    <span className="text-[10px] uppercase tracking-wider text-gold font-bold mb-1">{c.industry}</span>
-                    <h3 className="text-xl font-bold mb-2 text-black">{c.businessName}</h3>
-                    <p className="text-sm text-gray-500 mb-4 line-clamp-3">{c.objective}</p>
-                    
-                    {/* Action Panel: Read & Edit Buttons */}
-                    <div className="flex items-center justify-between text-sm font-semibold border-t border-gray-100 pt-4 mt-auto">
-                      <Link to={`/case-studies/${c.slug}`} className="text-black hover:text-gold flex items-center gap-1 transition-colors">
-                        Read Full Report <ArrowRight size={14} />
-                      </Link>
+        {/* SECURED VIEWER PLATFORM CONTAINER */}
+        <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-100 h-[550px] sm:h-[750px] lg:h-[850px] flex flex-col relative shadow-sm">
+          <div className="bg-gray-900 px-3 sm:px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between text-white text-[11px] sm:text-xs font-semibold gap-2 z-30 select-none">
+            <div className="flex items-center gap-2 truncate">
+              <FileText size={14} className="text-gold flex-shrink-0" /> 
+              <span className="truncate">🔓 Workspace — Presentation Mode Active</span>
+            </div>
+            <span className="text-[9px] sm:text-[10px] text-gray-400 flex items-center gap-1 self-end sm:self-auto">
+              <ShieldCheck size={12} className="text-emerald-500" /> Dynamic Asset Protection Shield Active
+            </span>
+          </div>
+          
+          <div 
+            className={`w-full flex-1 relative bg-white transition-all duration-300 ${!isTabFocused ? 'blur-xl scale-95 select-none pointer-events-none' : ''}`}
+          >
+            {/* 🛡️ SECURITY LAYER: Multi-page overlapping dynamic watermark framework */}
+            {secureTargetUrl && (
+              <div 
+                className="absolute inset-0 pointer-events-none select-none z-20"
+                style={{ 
+                  backgroundImage: svgWatermarkPattern,
+                  backgroundRepeat: "repeat",
+                  userSelect: "none"
+                }}
+              />
+            )}
+            
+            {secureTargetUrl ? (
+              <iframe 
+                src={secureTargetUrl}
+                className="w-full h-full border-none absolute inset-0 z-10"
+                title="Secured Document Streaming Node"
+                allow="autoplay"
+                style={{ pointerEvents: "auto" }}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 text-xs sm:text-sm z-10 relative px-4 text-center">
+                No active public document configuration linked to this configuration node.
+              </div>
+            )}
 
-                      {/* 🛠️ ADDED: Admin Control Panel Edit Trigger */}
-                      <Link 
-                        to={`/admin/edit/${c.slug}`} 
-                        className="text-gray-400 hover:text-blue-600 flex items-center gap-1 text-xs border border-gray-200 hover:border-blue-200 px-2.5 py-1 rounded transition-all"
-                        title="Edit Case Study Configuration"
-                      >
-                        <Edit3 size={12} /> Edit
-                      </Link>
-                    </div>
-
-                  </div>
+            {/* Focus Loss Overlay */}
+            {!isTabFocused && (
+              <div className="absolute inset-0 z-40 bg-gray-900/60 backdrop-blur-md flex items-center justify-center text-white font-bold text-center p-4">
+                <div className="p-4 bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-w-xs text-xs sm:text-sm">
+                  Screen capture restriction engaged. Refocus window to resume presentation context.
                 </div>
-              </StaggerItem>
-            ))}
-          </StaggerGrid>
-        )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
