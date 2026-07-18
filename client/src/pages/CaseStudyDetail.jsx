@@ -30,21 +30,28 @@ export default function CaseStudyDetail() {
     return () => document.removeEventListener("contextmenu", blockMenu);
   }, []);
 
-  if (status === "loading") return <div className="pt-40 text-center text-gray-400">Loading dynamic workspace context...</div>;
+  if (status === "loading") return <div className="pt-40 text-center text-gray-400">Loading workspace context...</div>;
   if (status === "offline" || !data) return <div className="pt-40 text-center text-red-500">Report details are currently unavailable.</div>;
 
-  // Resolve backend file path host intelligently from dynamic configuration rules
+  // 1. Safe Base URL parsing logic
   const baseApiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
   const serverBase = baseApiUrl.replace(/[()]/g, "").replace(/\/api\/?$/i, "").trim();
   
-  // Clean target path logic
-  let basePdf = data.pdfUrl?.startsWith("http") ? data.pdfUrl : `${serverBase}${data.pdfUrl}`;
-  
-  // Sanitize double routing path anomalies matching /api/uploads
-  basePdf = basePdf.replace("/api/uploads", "/uploads");
-  
-  // FIX: Instruct native render layers to hide toolbar overlays
-  const secureNativeUrl = `${basePdf}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
+  // 2. Build robust target PDF path addressing scheme
+  let basePdf = "";
+  if (data.pdfUrl) {
+    if (data.pdfUrl.startsWith("http")) {
+      basePdf = data.pdfUrl;
+    } else {
+      // If server uploads are missing due to Vercel ephemeral wipes, 
+      // check if the asset exists inside the client public bundle build directory
+      basePdf = `${window.location.origin}${data.pdfUrl.replace("/api/uploads", "/uploads").replace("/uploads", "")}`;
+    }
+  }
+
+  // 3. Fallback Embed Builder configuration
+  // For standard cross-origin security compatibility, we utilize a robust iframe rendering strategy
+  const secureNativeUrl = basePdf ? `${basePdf}#toolbar=0&navpanes=0&scrollbar=0&view=FitH` : "";
 
   return (
     <div className="pt-32 pb-20 bg-white text-black min-h-screen select-none">
@@ -62,7 +69,7 @@ export default function CaseStudyDetail() {
           {data.summary}
         </div>
 
-        {/* SECURED VIEWER NODE PLATFORM CONTAINER */}
+        {/* SECURED VIEWER CONTAINER */}
         <div className="border border-gray-200 rounded-md overflow-hidden bg-gray-100 h-[800px] flex flex-col relative shadow-sm">
           <div className="bg-gray-900 px-4 py-3 flex items-center justify-between text-white text-xs font-semibold z-10">
             <div className="flex items-center gap-2">
@@ -75,22 +82,24 @@ export default function CaseStudyDetail() {
           </div>
           
           <div className="w-full flex-1 relative bg-white overflow-hidden">
-            {/* 🛡️ TRANSPARENT GUARD SHIELD: Intercepts pointer events to block drag-selection or frame clicking */}
+            {/* 🛡️ TRANSPARENT GUARD SHIELD: Intercepts pointer events to block selection or clicking */}
             <div 
               className="absolute inset-0 z-20 bg-transparent" 
               style={{ pointerEvents: "auto", userSelect: "none" }}
               onContextMenu={(e) => e.preventDefault()}
             />
             
-            {/* Embedded Native Object Window fallback to basic embed if needed */}
-            <object
-              data={secureNativeUrl}
-              type="application/pdf"
-              className="w-full h-full border-none pointer-events-none"
-              id="protected-document-viewer"
-            >
-              <embed src={secureNativeUrl} type="application/pdf" />
-            </object>
+            {secureNativeUrl ? (
+              <iframe 
+                src={secureNativeUrl}
+                className="w-full h-full border-none"
+                title="Secured Document Presenter Node"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 text-sm">
+                No matching source PDF document record has been attached.
+              </div>
+            )}
           </div>
         </div>
       </div>
