@@ -24,20 +24,16 @@ export default function CaseStudyDetail() {
       });
   }, [slug]);
 
-  // 🛡️ ANTI-SCREENSHOT & COPY PROTECTION HANDLERS
+  // 🛡️ ANTI-THEFT PROTECTION NETWORK
   useEffect(() => {
-    // 1. Disable context menus everywhere
+    // 1. Completely disable right-clicks across the application
     const blockMenu = (e) => e.preventDefault();
     document.addEventListener("contextmenu", blockMenu);
 
-    // 2. Intercept capture shortcuts (PrintScreen, Copy commands, Print commands)
+    // 2. Block keyboard extraction shortcuts (Print, Copy, Save hooks)
     const interceptKeys = (e) => {
-      // Block Ctrl+P / Cmd+P
-      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-        e.preventDefault();
-        alert("Printing is disabled in Presentation Mode.");
-      }
-      // Block Ctrl+C / Cmd+C
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') e.preventDefault();
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') e.preventDefault();
       if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
         e.preventDefault();
         navigator.clipboard.writeText("Protected Portfolio Content — Access Denied.");
@@ -45,16 +41,10 @@ export default function CaseStudyDetail() {
     };
     document.addEventListener("keydown", interceptKeys);
 
-    // 3. Tab Visibility Blur Engine (blurs content if system snippet tools open or users unfocus)
-    const handleVisibilityChange = () => {
-      setIsTabFocused(!document.hidden);
-    };
-    const handleWindowBlur = () => {
-      setIsTabFocused(false);
-    };
-    const handleWindowFocus = () => {
-      setIsTabFocused(true);
-    };
+    // 3. Tab Visibility Defibrillator (Blurs if snipping tools break application focus)
+    const handleVisibilityChange = () => setIsTabFocused(!document.hidden);
+    const handleWindowBlur = () => setIsTabFocused(false);
+    const handleWindowFocus = () => setIsTabFocused(true);
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("blur", handleWindowBlur);
@@ -90,11 +80,9 @@ export default function CaseStudyDetail() {
 
   return (
     <div className="pt-24 sm:pt-32 pb-20 bg-white text-black min-h-screen select-none" style={{ userSelect: "none" }}>
-      {/* Dynamic CSS Print Hiding Layer injected directly */}
       <style>{`
         @media print {
           body { display: none !important; }
-          .no-print { display: none !important; }
         }
       `}</style>
 
@@ -112,26 +100,35 @@ export default function CaseStudyDetail() {
           {data.summary}
         </div>
 
-        {/* SECURED VIEWER PLATFORM CONTAINER (Fully Fluid Mobile Response) */}
-        <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-100 h-[550px] sm:h-[750px] lg:h-[850px] flex flex-col relative shadow-sm no-print">
+        {/* SECURED VIEWER PLATFORM CONTAINER */}
+        <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-100 h-[550px] sm:h-[750px] lg:h-[850px] flex flex-col relative shadow-sm">
           <div className="bg-gray-900 px-3 sm:px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between text-white text-[11px] sm:text-xs font-semibold gap-2 z-30 select-none">
             <div className="flex items-center gap-2 truncate">
               <FileText size={14} className="text-gold flex-shrink-0" /> 
               <span className="truncate">🔓 Workspace — Presentation Mode Active</span>
             </div>
             <span className="text-[9px] sm:text-[10px] text-gray-400 flex items-center gap-1 self-end sm:self-auto">
-              <ShieldCheck size={12} className="text-emerald-500 flex-shrink-0" /> Content Encryption Active
+              <ShieldCheck size={12} className="text-emerald-500" /> Dynamic Asset Protection Shield Active
             </span>
           </div>
           
           <div 
             className={`w-full flex-1 relative bg-white transition-all duration-300 ${!isTabFocused ? 'blur-xl scale-95 select-none pointer-events-none' : ''}`}
           >
-            {/* 🛡️ OPTIMIZED TRANSPARENT GUARD SHIELD: Allows scrolling through while text remains unselectable */}
+            {/* 🛡️ DYNAMIC HIGH-INTENSITY WATERMARK OVERLAY GRID */}
             <div 
-              className="absolute inset-0 z-20 bg-transparent" 
-              style={{ pointerEvents: "none", userSelect: "none" }}
-            />
+              className="absolute inset-0 z-20 bg-transparent grid grid-cols-2 sm:grid-cols-3 gap-y-16 sm:gap-y-24 justify-items-center items-center overflow-hidden pointer-events-none opacity-[0.12] select-none mix-blend-difference"
+              style={{ userSelect: "none" }}
+            >
+              {Array.from({ length: 18 }).map((_, i) => (
+                <div 
+                  key={i} 
+                  className="text-black text-xs sm:text-sm font-bold uppercase tracking-wider -rotate-[35deg] whitespace-nowrap p-2 border border-black/25 rounded"
+                >
+                  ScanX Research • {data.businessName || "Confidential"}
+                </div>
+              ))}
+            </div>
             
             {secureTargetUrl ? (
               <iframe 
@@ -147,11 +144,11 @@ export default function CaseStudyDetail() {
               </div>
             )}
 
-            {/* Blurred Guard Text Overlay Shown Only When Window Loses Focus */}
+            {/* Focus Loss Overlay */}
             {!isTabFocused && (
-              <div className="absolute inset-0 z-40 bg-gray-900/40 backdrop-blur-md flex items-center justify-center text-white font-bold text-center p-4">
-                <div className="p-4 bg-gray-900 rounded-lg shadow-xl max-w-xs text-xs sm:text-sm">
-                  Screen capture restriction active. Refocus the view container to resume presentation reading.
+              <div className="absolute inset-0 z-40 bg-gray-900/60 backdrop-blur-md flex items-center justify-center text-white font-bold text-center p-4">
+                <div className="p-4 bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-w-xs text-xs sm:text-sm">
+                  Screen capture restriction engaged. Refocus window to resume presentation context.
                 </div>
               </div>
             )}
