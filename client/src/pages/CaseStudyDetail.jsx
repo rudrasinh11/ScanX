@@ -24,7 +24,7 @@ export default function CaseStudyDetail() {
       });
   }, [slug]);
 
-  // 🛡️ ANTI-THEFT AND EXTRACT PROTECTION LAYER
+  // 🛡️ ANTI-THEFT CONTEXT SHIELD
   useEffect(() => {
     const blockMenu = (e) => e.preventDefault();
     document.addEventListener("contextmenu", blockMenu);
@@ -75,8 +75,8 @@ export default function CaseStudyDetail() {
     }
   }
 
-  // Pure SVG string converted for infinite CSS rendering engine utility
-  const svgWatermarkPattern = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'><text x='50%' y='50%' text-anchor='middle' fill='black' font-family='sans-serif' font-weight='900' font-size='22' opacity='0.12' transform='rotate(-35, 120, 120)'>ScanX</text></svg>")`;
+  // 🎨 Custom SVG generation for bottom-left to top-right layout streams
+  const svgWatermarkPattern = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='180' viewBox='0 0 300 180'><text x='50%' y='50%' text-anchor='middle' fill='black' font-family='sans-serif' font-weight='900' font-size='26' opacity='0.14' transform='rotate(-25, 150, 90)'>ScanX</text></svg>")`;
 
   return (
     <div className="pt-24 sm:pt-32 pb-20 bg-white text-black min-h-screen select-none" style={{ userSelect: "none" }}>
@@ -115,7 +115,7 @@ export default function CaseStudyDetail() {
           <div 
             className={`w-full flex-1 relative bg-white transition-all duration-300 ${!isTabFocused ? 'blur-xl scale-95 select-none pointer-events-none' : ''}`}
           >
-            {/* 🛡️ INFINITE RESPONSIVE AUTOMATIC "SCANX" WATERMARK MATRIX */}
+            {/* 🛡️ STRATEGIC UPWARD DIAGONAL WATERMARK MATRIX */}
             {secureTargetUrl && (
               <div 
                 className="absolute inset-0 z-20 pointer-events-none select-none mix-blend-difference"
@@ -137,7 +137,7 @@ export default function CaseStudyDetail() {
               />
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-gray-400 text-xs sm:text-sm z-10 relative px-4 text-center">
-                No active public document linked to this configuration node.
+                No active public document configuration linked to this configuration node.
               </div>
             )}
 
