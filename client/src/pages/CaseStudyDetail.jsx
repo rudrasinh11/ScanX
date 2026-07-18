@@ -30,28 +30,26 @@ export default function CaseStudyDetail() {
     return () => document.removeEventListener("contextmenu", blockMenu);
   }, []);
 
-  if (status === "loading") return <div className="pt-40 text-center text-gray-400">Loading workspace context...</div>;
+  if (status === "loading") return <div className="pt-40 text-center text-gray-400">Loading dynamic workspace context...</div>;
   if (status === "offline" || !data) return <div className="pt-40 text-center text-red-500">Report details are currently unavailable.</div>;
 
-  // 1. Safe Base URL parsing logic
-  const baseApiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-  const serverBase = baseApiUrl.replace(/[()]/g, "").replace(/\/api\/?$/i, "").trim();
-  
-  // 2. Build robust target PDF path addressing scheme
-  let basePdf = "";
-  if (data.pdfUrl) {
-    if (data.pdfUrl.startsWith("http")) {
-      basePdf = data.pdfUrl;
-    } else {
-      // If server uploads are missing due to Vercel ephemeral wipes, 
-      // check if the asset exists inside the client public bundle build directory
-      basePdf = `${window.location.origin}${data.pdfUrl.replace("/api/uploads", "/uploads").replace("/uploads", "")}`;
+  // Build target streaming link addresses safely
+  let secureTargetUrl = data.pdfUrl || "";
+
+  if (secureTargetUrl) {
+    // 🛡️ AUTOMATED GOOGLE DRIVE EMBED TRANSFORMER
+    if (secureTargetUrl.includes("drive.google.com")) {
+      if (secureTargetUrl.includes("/view")) {
+        secureTargetUrl = secureTargetUrl.split("/view")[0] + "/preview";
+      } else if (secureTargetUrl.includes("id=")) {
+        const urlParams = new URLSearchParams(new URL(secureTargetUrl).search);
+        const docId = urlParams.get("id");
+        if (docId) {
+          secureTargetUrl = `https://drive.google.com/file/d/${docId}/preview`;
+        }
+      }
     }
   }
-
-  // 3. Fallback Embed Builder configuration
-  // For standard cross-origin security compatibility, we utilize a robust iframe rendering strategy
-  const secureNativeUrl = basePdf ? `${basePdf}#toolbar=0&navpanes=0&scrollbar=0&view=FitH` : "";
 
   return (
     <div className="pt-32 pb-20 bg-white text-black min-h-screen select-none">
@@ -69,12 +67,12 @@ export default function CaseStudyDetail() {
           {data.summary}
         </div>
 
-        {/* SECURED VIEWER CONTAINER */}
+        {/* SECURED VIEWER NODE PLATFORM LAYER */}
         <div className="border border-gray-200 rounded-md overflow-hidden bg-gray-100 h-[800px] flex flex-col relative shadow-sm">
           <div className="bg-gray-900 px-4 py-3 flex items-center justify-between text-white text-xs font-semibold z-10">
             <div className="flex items-center gap-2">
               <FileText size={14} className="text-gold" /> 
-              🔓 Full Portfolio Presentation Mode — Read Access Enabled
+              🔓 Presentation Workspace — Live Presentation Mode Active
             </div>
             <span className="text-[10px] text-gray-400 flex items-center gap-1">
               <ShieldCheck size={12} className="text-emerald-500" /> Source Copy Protection Active
@@ -82,22 +80,23 @@ export default function CaseStudyDetail() {
           </div>
           
           <div className="w-full flex-1 relative bg-white overflow-hidden">
-            {/* 🛡️ TRANSPARENT GUARD SHIELD: Intercepts pointer events to block selection or clicking */}
+            {/* 🛡️ TRANSPARENT GUARD SHIELD: Intercepts right-clicks and drag operations completely */}
             <div 
               className="absolute inset-0 z-20 bg-transparent" 
               style={{ pointerEvents: "auto", userSelect: "none" }}
               onContextMenu={(e) => e.preventDefault()}
             />
             
-            {secureNativeUrl ? (
+            {secureTargetUrl ? (
               <iframe 
-                src={secureNativeUrl}
-                className="w-full h-full border-none"
-                title="Secured Document Presenter Node"
+                src={secureTargetUrl}
+                className="w-full h-full border-none absolute inset-0 z-10"
+                title="Secured Document Streaming Node"
+                allow="autoplay"
               />
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-gray-400 text-sm">
-                No matching source PDF document record has been attached.
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 text-sm z-10 relative">
+                No active cloud PDF document configuration linked to this case record.
               </div>
             )}
           </div>
