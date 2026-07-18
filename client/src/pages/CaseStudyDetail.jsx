@@ -24,7 +24,7 @@ export default function CaseStudyDetail() {
       });
   }, [slug]);
 
-  // 🛡️ ANTI-THEFT CONTEXT SHIELD
+  // 🛡️ ANTI-THEFT AND INPUT HOOKS INTERCEPTION
   useEffect(() => {
     const blockMenu = (e) => e.preventDefault();
     document.addEventListener("contextmenu", blockMenu);
@@ -75,8 +75,9 @@ export default function CaseStudyDetail() {
     }
   }
 
-  // 🎨 Custom SVG generation for bottom-left to top-right layout streams
-  const svgWatermarkPattern = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='180' viewBox='0 0 300 180'><text x='50%' y='50%' text-anchor='middle' fill='black' font-family='sans-serif' font-weight='900' font-size='26' opacity='0.14' transform='rotate(-25, 150, 90)'>ScanX</text></svg>")`;
+  // 🎨 Fixed High-Visibility Infinite Diagonal Watermark Matrix Vector (Bottom-Left to Top-Right text lines)
+  // Uses explicit color hex coding with a safe opacity filter that bypasses iframe bleed boundaries
+  const svgWatermarkPattern = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='200' viewBox='0 0 260 200'><text x='50%' y='50%' text-anchor='middle' fill='%237a7a7a' font-family='sans-serif' font-weight='900' font-size='26' opacity='0.22' transform='rotate(-30, 130, 100)'>ScanX</text></svg>")`;
 
   return (
     <div className="pt-24 sm:pt-32 pb-20 bg-white text-black min-h-screen select-none" style={{ userSelect: "none" }}>
@@ -115,10 +116,10 @@ export default function CaseStudyDetail() {
           <div 
             className={`w-full flex-1 relative bg-white transition-all duration-300 ${!isTabFocused ? 'blur-xl scale-95 select-none pointer-events-none' : ''}`}
           >
-            {/* 🛡️ STRATEGIC UPWARD DIAGONAL WATERMARK MATRIX */}
+            {/* 🛡️ SECURITY LAYER: Multi-page overlapping dynamic watermark framework */}
             {secureTargetUrl && (
               <div 
-                className="absolute inset-0 z-20 pointer-events-none select-none mix-blend-difference"
+                className="absolute inset-0 pointer-events-none select-none z-20"
                 style={{ 
                   backgroundImage: svgWatermarkPattern,
                   backgroundRepeat: "repeat",
