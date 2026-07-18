@@ -24,7 +24,7 @@ export default function CaseStudyDetail() {
       });
   }, [slug]);
 
-  // 🛡️ ANTI-THEFT AND SHORTCUT INTERCEPTION
+  // 🛡️ ANTI-THEFT AND EXTRACT PROTECTION LAYER
   useEffect(() => {
     const blockMenu = (e) => e.preventDefault();
     document.addEventListener("contextmenu", blockMenu);
@@ -75,6 +75,9 @@ export default function CaseStudyDetail() {
     }
   }
 
+  // Pure SVG string converted for infinite CSS rendering engine utility
+  const svgWatermarkPattern = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'><text x='50%' y='50%' text-anchor='middle' fill='black' font-family='sans-serif' font-weight='900' font-size='22' opacity='0.12' transform='rotate(-35, 120, 120)'>ScanX</text></svg>")`;
+
   return (
     <div className="pt-24 sm:pt-32 pb-20 bg-white text-black min-h-screen select-none" style={{ userSelect: "none" }}>
       <style>{`
@@ -112,21 +115,16 @@ export default function CaseStudyDetail() {
           <div 
             className={`w-full flex-1 relative bg-white transition-all duration-300 ${!isTabFocused ? 'blur-xl scale-95 select-none pointer-events-none' : ''}`}
           >
-            {/* 🛡️ AUTOMATIC "SCANX" HIGH-INTENSITY WATERMARK OVERLAY GRID */}
+            {/* 🛡️ INFINITE RESPONSIVE AUTOMATIC "SCANX" WATERMARK MATRIX */}
             {secureTargetUrl && (
               <div 
-                className="absolute inset-0 z-20 bg-transparent grid grid-cols-2 sm:grid-cols-3 gap-y-20 sm:gap-y-32 justify-items-center items-center overflow-hidden pointer-events-none opacity-[0.09] select-none mix-blend-difference"
-                style={{ userSelect: "none" }}
-              >
-                {Array.from({ length: 24 }).map((_, i) => (
-                  <div 
-                    key={i} 
-                    className="text-black text-xl sm:text-3xl font-black uppercase tracking-widest -rotate-[30deg] whitespace-nowrap p-4"
-                  >
-                    ScanX
-                  </div>
-                ))}
-              </div>
+                className="absolute inset-0 z-20 pointer-events-none select-none mix-blend-difference"
+                style={{ 
+                  backgroundImage: svgWatermarkPattern,
+                  backgroundRepeat: "repeat",
+                  userSelect: "none"
+                }}
+              />
             )}
             
             {secureTargetUrl ? (
@@ -139,7 +137,7 @@ export default function CaseStudyDetail() {
               />
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-gray-400 text-xs sm:text-sm z-10 relative px-4 text-center">
-                No active document linked.
+                No active public document linked to this configuration node.
               </div>
             )}
 
