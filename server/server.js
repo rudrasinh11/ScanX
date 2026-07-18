@@ -13,16 +13,17 @@ import ContactSubmission from "./models/ContactSubmission.js";
 
 dotenv.config();
 
-const app = express();
+const path = require('path');
+// If using ES modules (import), use: import path from 'path';
 
-// Serve uploaded files
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://scanx-market.vercel.app",
-  "https://scanx-market-rudrasinh11s-projects.vercel.app"
-];
+// Explicitly serve the uploads directory statically with permissive headers
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET');
+    res.set('Content-Type', 'application/pdf');
+  }
+}));
 
 app.use(
   cors({

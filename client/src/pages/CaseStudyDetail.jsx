@@ -38,9 +38,12 @@ export default function CaseStudyDetail() {
   const serverBase = baseApiUrl.replace(/[()]/g, "").replace(/\/api\/?$/i, "").trim();
   
   // Clean target path logic
-  const basePdf = data.pdfUrl?.startsWith("http") ? data.pdfUrl : `${serverBase}${data.pdfUrl}`;
+  let basePdf = data.pdfUrl?.startsWith("http") ? data.pdfUrl : `${serverBase}${data.pdfUrl}`;
   
-  // FIX: Append specific URL parameters to instruct native PDF viewers to strip out toolbars and side menus
+  // Sanitize double routing path anomalies matching /api/uploads
+  basePdf = basePdf.replace("/api/uploads", "/uploads");
+  
+  // FIX: Instruct native render layers to hide toolbar overlays
   const secureNativeUrl = `${basePdf}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
 
   return (

@@ -8,6 +8,15 @@
   ],
   "routes": [
     {
+      "src": "/uploads/(.*)",
+      "dest": "/uploads/$1",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET",
+        "Content-Type": "application/pdf"
+      }
+    },
+    {
       "src": "/api/(.*)",
       "dest": "server.js"
     },
