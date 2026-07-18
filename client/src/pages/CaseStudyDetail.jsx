@@ -36,10 +36,12 @@ export default function CaseStudyDetail() {
   // Resolve backend file path host intelligently from dynamic configuration rules
   const baseApiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
   const serverBase = baseApiUrl.replace(/[()]/g, "").replace(/\/api\/?$/i, "").trim();
+  
+  // Clean target path logic
   const basePdf = data.pdfUrl?.startsWith("http") ? data.pdfUrl : `${serverBase}${data.pdfUrl}`;
   
-  // Appends security presentation parameters to drop the printing/download buttons from the frame tools
-  const secureEmbedUrl = `https://docs.google.com/gview?url=${encodeURIComponent(basePdf)}&embedded=true&rm=minimal#toolbar=0&navpanes=0&scrollbar=0`;
+  // FIX: Append specific URL parameters to instruct native PDF viewers to strip out toolbars and side menus
+  const secureNativeUrl = `${basePdf}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
 
   return (
     <div className="pt-32 pb-20 bg-white text-black min-h-screen select-none">
@@ -77,13 +79,15 @@ export default function CaseStudyDetail() {
               onContextMenu={(e) => e.preventDefault()}
             />
             
-            {/* Embedded Sandbox Document Window */}
-            <iframe 
-              src={secureEmbedUrl} 
-              className="w-full h-full border-none pointer-events-none" 
-              title="Secured PDF Presentation Frame"
+            {/* Embedded Native Object Window fallback to basic embed if needed */}
+            <object
+              data={secureNativeUrl}
+              type="application/pdf"
+              className="w-full h-full border-none pointer-events-none"
               id="protected-document-viewer"
-            />
+            >
+              <embed src={secureNativeUrl} type="application/pdf" />
+            </object>
           </div>
         </div>
       </div>
