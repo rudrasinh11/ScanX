@@ -24,13 +24,11 @@ export default function CaseStudyDetail() {
       });
   }, [slug]);
 
-  // 🛡️ ANTI-THEFT PROTECTION NETWORK
+  // 🛡️ ANTI-THEFT AND SHORTCUT INTERCEPTION
   useEffect(() => {
-    // 1. Completely disable right-clicks across the application
     const blockMenu = (e) => e.preventDefault();
     document.addEventListener("contextmenu", blockMenu);
 
-    // 2. Block keyboard extraction shortcuts (Print, Copy, Save hooks)
     const interceptKeys = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'p') e.preventDefault();
       if ((e.ctrlKey || e.metaKey) && e.key === 's') e.preventDefault();
@@ -41,7 +39,6 @@ export default function CaseStudyDetail() {
     };
     document.addEventListener("keydown", interceptKeys);
 
-    // 3. Tab Visibility Defibrillator (Blurs if snipping tools break application focus)
     const handleVisibilityChange = () => setIsTabFocused(!document.hidden);
     const handleWindowBlur = () => setIsTabFocused(false);
     const handleWindowFocus = () => setIsTabFocused(true);
@@ -59,7 +56,7 @@ export default function CaseStudyDetail() {
     };
   }, []);
 
-  if (status === "loading") return <div className="pt-40 text-center text-gray-400">Loading dynamic workspace context...</div>;
+  if (status === "loading") return <div className="pt-40 text-center text-gray-400">Loading workspace context...</div>;
   if (status === "offline" || !data) return <div className="pt-40 text-center text-red-500">Report details are currently unavailable.</div>;
 
   let secureTargetUrl = data.pdfUrl || "";
@@ -115,20 +112,22 @@ export default function CaseStudyDetail() {
           <div 
             className={`w-full flex-1 relative bg-white transition-all duration-300 ${!isTabFocused ? 'blur-xl scale-95 select-none pointer-events-none' : ''}`}
           >
-            {/* 🛡️ DYNAMIC HIGH-INTENSITY WATERMARK OVERLAY GRID */}
-            <div 
-              className="absolute inset-0 z-20 bg-transparent grid grid-cols-2 sm:grid-cols-3 gap-y-16 sm:gap-y-24 justify-items-center items-center overflow-hidden pointer-events-none opacity-[0.12] select-none mix-blend-difference"
-              style={{ userSelect: "none" }}
-            >
-              {Array.from({ length: 18 }).map((_, i) => (
-                <div 
-                  key={i} 
-                  className="text-black text-xs sm:text-sm font-bold uppercase tracking-wider -rotate-[35deg] whitespace-nowrap p-2 border border-black/25 rounded"
-                >
-                  ScanX Research • {data.businessName || "Confidential"}
-                </div>
-              ))}
-            </div>
+            {/* 🛡️ AUTOMATIC "SCANX" HIGH-INTENSITY WATERMARK OVERLAY GRID */}
+            {secureTargetUrl && (
+              <div 
+                className="absolute inset-0 z-20 bg-transparent grid grid-cols-2 sm:grid-cols-3 gap-y-20 sm:gap-y-32 justify-items-center items-center overflow-hidden pointer-events-none opacity-[0.09] select-none mix-blend-difference"
+                style={{ userSelect: "none" }}
+              >
+                {Array.from({ length: 24 }).map((_, i) => (
+                  <div 
+                    key={i} 
+                    className="text-black text-xl sm:text-3xl font-black uppercase tracking-widest -rotate-[30deg] whitespace-nowrap p-4"
+                  >
+                    ScanX
+                  </div>
+                ))}
+              </div>
+            )}
             
             {secureTargetUrl ? (
               <iframe 
@@ -140,7 +139,7 @@ export default function CaseStudyDetail() {
               />
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-gray-400 text-xs sm:text-sm z-10 relative px-4 text-center">
-                No active public document configuration linked to this case record.
+                No active document linked.
               </div>
             )}
 
