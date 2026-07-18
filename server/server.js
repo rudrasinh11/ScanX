@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import http from "http";
 import { Server as IOServer } from "socket.io";
 import path from "path";
+import { fileURLToPath } from "url";
 import { connectDB } from "./config/db.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import caseStudyRoutes from "./routes/caseStudyRoutes.js";
@@ -13,36 +14,51 @@ import ContactSubmission from "./models/ContactSubmission.js";
 
 dotenv.config();
 
-const path = require('path');
-// If using ES modules (import), use: import path from 'path';
+const app = express();
+const server = http.createServer(app);
 
-// Explicitly serve the uploads directory statically with permissive headers
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
-  setHeaders: (res) => {
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'GET');
-    res.set('Content-Type', 'application/pdf');
-  }
-}));
+// ES module environment setups for directory resolution
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
+// Whitelisted client ecosystems
+const allowedOrigins = [
+  "https://scanx-market.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000"
+];
+
+// 1. Permissive CORS Middleware Configuration
 app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
       if (allowedOrigins.indexOf(origin) === -1) {
-        return callback(new Error('CORS policy block on this environment.'), false);
+        return callback(new Error("CORS policy block on this environment."), false);
       }
       return callback(null, true);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
   })
 );
 
+// Global Options handler for network preflight handshakes
+app.options("*", cors());
+
 app.use(express.json({ limit: "100kb" }));
 
-// Intercept every single execution call to verify MongoDB is alive
+// 2. Route static assets out of path intercepts cleanly
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res) => {
+    res.set('Access-Control-Allow-Origin', 'https://scanx-market.vercel.app');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.set('Content-Type', 'application/pdf');
+  }
+}));
+
+// Intercept every single execution call to verify MongoDB connection state
 app.use(async (req, res, next) => {
   try {
     await connectDB();
@@ -66,10 +82,6 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", service: "scanx-api" });
 });
 
-app.get("/", (req, res) => {
-  res.send("ScanX API Server Active & Ready");
-});
-
 app.use("/api/contact", contactLimiter, contactRoutes);
 app.use("/api/case-studies", caseStudyRoutes);
 app.use("/api/admin", adminRoutes);
@@ -81,8 +93,9 @@ app.get("/api/admin/clients", (req, res) => {
   return res.json({ clients: Array.from(clients.values()) });
 });
 
-const PORT = process.env.PORT || 5000;
-const server = http.createServer(app);
+app.get("/", (req, res) => {
+  res.send("ScanX API Server Active & Ready");
+});
 
 // ✅ FIXED: Initialize IOServer out of process.env.VERCEL blocker check, optimized for serverless architecture
 const io = new IOServer(server, {
@@ -134,6 +147,7 @@ app.use((req, res) => {
 });
 
 if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
   connectDB().then(() => {
     server.listen(PORT, () => {
       console.log(`ScanX API running locally on http://localhost:${PORT}`);
