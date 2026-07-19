@@ -75,9 +75,9 @@ export default function CaseStudyDetail() {
     }
   }
 
-  // 🎨 Fixed High-Visibility Infinite Diagonal Watermark Matrix Vector (Bottom-Left to Top-Right text lines)
-  // Uses explicit color hex coding with a safe opacity filter that bypasses iframe bleed boundaries
-  const svgWatermarkPattern = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='200' viewBox='0 0 260 200'><text x='50%' y='50%' text-anchor='middle' fill='%237a7a7a' font-family='sans-serif' font-weight='900' font-size='26' opacity='0.22' transform='rotate(-30, 130, 100)'>ScanX</text></svg>")`;
+  // 🎨 High-Density Infinite Diagonal Watermark Matrix Vector
+  // Enforces structural small-scale parameters inside the vector layer
+  const svgWatermarkPattern = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='90' viewBox='0 0 120 90'><text x='50%' y='50%' text-anchor='middle' fill='%237a7a7a' font-family='sans-serif' font-weight='900' font-size='14' opacity='0.25' transform='rotate(-30, 60, 45)'>ScanX</text></svg>")`;
 
   return (
     <div className="pt-24 sm:pt-32 pb-20 bg-white text-black min-h-screen select-none" style={{ userSelect: "none" }}>
@@ -123,6 +123,7 @@ export default function CaseStudyDetail() {
                 style={{ 
                   backgroundImage: svgWatermarkPattern,
                   backgroundRepeat: "repeat",
+                  backgroundSize: "120px 90px", // 🚀 FORCES strict dense rendering across all mobile devices
                   userSelect: "none"
                 }}
               />
