@@ -1,22 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Search, FileText } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 import Reveal from "../components/Reveal.jsx";
 import { StaggerGrid, StaggerItem } from "../components/StaggerGrid.jsx";
 import api from "../lib/api.js";
 
-// Normalizes an industry string so that differences in case, extra spaces,
-// or odd whitespace characters (e.g. non-breaking spaces from a CMS) don't
-// break matching between the filter buttons and the actual data.
-const normalizeIndustry = (value) =>
-  (value || "General")
-    .replace(/\s+/g, " ") // collapse all whitespace (incl. \u00A0, tabs, newlines)
-    .trim()
-    .toLowerCase();
-
-// Some APIs return a raw array, others wrap it in { data: [...] },
-// { items: [...] }, or { results: [...] }. Handle all of them instead of
-// silently falling back when the shape doesn't match exactly.
 const extractArray = (payload) => {
   if (Array.isArray(payload)) return payload;
   if (payload && Array.isArray(payload.data)) return payload.data;
@@ -28,7 +16,6 @@ const extractArray = (payload) => {
 export default function CaseStudies() {
   const [caseStudies, setCaseStudies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [industry, setIndustry] = useState("all"); // normalized key, not display label
   const [query, setQuery] = useState("");
 
   const fetchStudies = () => {
@@ -65,26 +52,9 @@ export default function CaseStudies() {
     fetchStudies();
   }, []);
 
-  // Build the pill list, deduped by normalized key but keeping the first
-  // "nicely formatted" label seen for display purposes.
-  const industries = useMemo(() => {
-    const map = new Map();
-    map.set("all", "All");
-    caseStudies.forEach((c) => {
-      const label = (c.industry || "General").trim();
-      const key = normalizeIndustry(label);
-      if (!map.has(key)) map.set(key, label);
-    });
-    return Array.from(map.entries()); // [ [key, label], ... ]
-  }, [caseStudies]);
-
   const filtered = caseStudies.filter((c) => {
-    const matchesIndustry =
-      industry === "all" || normalizeIndustry(c.industry) === industry;
-    const matchesQuery =
-      !query ||
-      (c.businessName && c.businessName.toLowerCase().includes(query.toLowerCase()));
-    return matchesIndustry && matchesQuery;
+    if (!query) return true;
+    return c.businessName && c.businessName.toLowerCase().includes(query.toLowerCase());
   });
 
   return (
@@ -97,20 +67,7 @@ export default function CaseStudies() {
           <p className="text-gray-600">Explore premium analytical business assets live.</p>
         </Reveal>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-10">
-          <div className="flex flex-wrap gap-2">
-            {industries.map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setIndustry(key)}
-                className={`text-xs font-semibold px-4 py-2 rounded-full border transition-all ${
-                  industry === key ? "bg-black text-white" : "bg-white text-gray-600 border-gray-200"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <div className="flex justify-end mb-10">
           <div className="relative w-full sm:w-64">
             <input
               value={query}
