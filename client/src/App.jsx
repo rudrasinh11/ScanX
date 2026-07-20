@@ -11,11 +11,13 @@ import Services from "./pages/Services.jsx";
 import Methodology from "./pages/Methodology.jsx";
 import About from "./pages/About.jsx";
 import Contact from "./pages/Contact.jsx";
+import Pricing from "./pages/Pricing.jsx"; // Added public pricing page
 import NotFound from "./pages/NotFound.jsx";
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
 import Dashboard from "./pages/admin/Dashboard.jsx";
 import CaseStudiesAdmin from "./pages/admin/CaseStudies.jsx";
 import Submissions from "./pages/admin/Submissions.jsx";
+import PricingAdmin from "./pages/admin/PricingAdmin.jsx"; // Added admin pricing control page
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import Privacy from "./pages/Privacy.jsx";
 import Disclaimer from "./pages/Disclaimer.jsx";
@@ -45,6 +47,7 @@ export default function App() {
           <Route path="/methodology" element={<Methodology />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/pricing" element={<Pricing />} /> {/* Public Pricing Canvas */}
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/disclaimer" element={<Disclaimer />} />
           
@@ -56,6 +59,7 @@ export default function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="case-studies" element={<CaseStudiesAdmin />} />
             <Route path="submissions" element={<Submissions />} />
+            <Route path="pricing" element={<PricingAdmin />} /> {/* Admin Pricing Content Manager */}
           </Route>
 
           {/* Catch-all 404 handler (Must be placed at the very bottom) */}
